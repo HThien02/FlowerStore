@@ -41,8 +41,11 @@ export function getSupabaseServerClient() {
   return supabaseServerClient
 }
 
-// Export for backwards compatibility
+// Export for backwards compatibility — use getters so importing this module
+// does not eagerly create a client (avoids supabaseUrl errors during SSR/module init).
 export const supabase = {
   from: (table: string) => getSupabaseClient().from(table),
-  auth: getSupabaseClient().auth,
+  get auth() {
+    return getSupabaseClient().auth
+  },
 }
