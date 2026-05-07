@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User } from '@supabase/supabase-js'
-import { supabase } from './supabase'
+import { isSupabaseConfigured, supabase } from './supabase'
 
 type AuthContextType = {
   user: User | null
@@ -19,7 +19,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check current session
+    if (!isSupabaseConfigured()) {
+      console.warn(
+        '[Auth] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Add them in Vercel → Settings → Environment Variables and redeploy.'
+      )
+      setIsLoading(false)
+      return
+    }
+
     const checkSession = async () => {
       try {
         const {
@@ -35,7 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     checkSession()
 
-    // Subscribe to auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -46,6 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    if (!isSupabaseConfigured()) {
+      throw new Error(
+        'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY on the server and redeploy.'
+      )
+    }
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -60,6 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    if (!isSupabaseConfigured()) {
+      throw new Error(
+        'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY on the server and redeploy.'
+      )
+    }
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -69,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
+    if (!isSupabaseConfigured()) return
     const { error } = await supabase.auth.signOut()
     if (error) throw error
   }
