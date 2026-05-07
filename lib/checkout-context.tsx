@@ -29,14 +29,19 @@ export type PaymentInfo = {
   method: 'card' | 'bank_transfer' | 'momo'
 }
 
+/** Store pickup vs home delivery — drives payment step & address fields. */
+export type FulfillmentType = 'pickup' | 'home'
+
 type CheckoutContextType = {
   currentStep: CheckoutStep
+  fulfillmentType: FulfillmentType | null
   deliveryInfo: DeliveryInfo
   selectedDelivery?: DeliveryOption
   paymentInfo: PaymentInfo
   deliveryCost: number
   
   setCurrentStep: (step: CheckoutStep) => void
+  setFulfillmentType: (value: FulfillmentType | null) => void
   setDeliveryInfo: (info: Partial<DeliveryInfo>) => void
   setSelectedDelivery: (delivery: DeliveryOption) => void
   setPaymentInfo: (info: Partial<PaymentInfo>) => void
@@ -60,6 +65,7 @@ const CheckoutContext = createContext<CheckoutContextType | undefined>(undefined
 
 export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(1)
+  const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType | null>(null)
   const [deliveryInfo, setDeliveryInfoState] = useState<DeliveryInfo>(defaultDeliveryInfo)
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption | undefined>()
   const [paymentInfo, setPaymentInfoState] = useState<PaymentInfo>({ method: 'card' })
@@ -75,6 +81,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 
   const reset = () => {
     setCurrentStep(1)
+    setFulfillmentType(null)
     setDeliveryInfoState(defaultDeliveryInfo)
     setSelectedDelivery(undefined)
     setPaymentInfoState({ method: 'card' })
@@ -85,11 +92,13 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     <CheckoutContext.Provider
       value={{
         currentStep,
+        fulfillmentType,
         deliveryInfo,
         selectedDelivery,
         paymentInfo,
         deliveryCost,
         setCurrentStep,
+        setFulfillmentType,
         setDeliveryInfo,
         setSelectedDelivery,
         setPaymentInfo,

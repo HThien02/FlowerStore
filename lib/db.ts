@@ -1,12 +1,18 @@
 import { getSupabaseClient } from './supabase'
 
 // Product operations
-export async function getProducts(category?: string) {
+export async function getProducts(
+  categoryId?: string,
+  options?: { featuredOnly?: boolean }
+) {
   const supabase = getSupabaseClient()
   let query = supabase.from('products').select('*')
 
-  if (category) {
-    query = query.eq('category_id', category)
+  if (categoryId) {
+    query = query.eq('category_id', categoryId)
+  }
+  if (options?.featuredOnly) {
+    query = query.eq('featured', true)
   }
 
   const { data, error } = await query.order('created_at', { ascending: false })

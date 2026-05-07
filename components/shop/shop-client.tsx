@@ -23,6 +23,7 @@ type Product = {
   image_url: string
   rating: number
   reviews_count: number
+  category_id?: string
 }
 
 type Category = {
@@ -61,9 +62,11 @@ export default function ShopClient({
       )
     }
 
-    // Filter by category
     if (selectedCategory) {
-      // TODO: Filter by category once category_id is available in products
+      const cat = categories.find((c) => c.slug === selectedCategory)
+      if (cat) {
+        products = products.filter((p) => p.category_id === cat.id)
+      }
     }
 
     // Sort

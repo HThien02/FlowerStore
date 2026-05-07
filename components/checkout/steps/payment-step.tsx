@@ -95,7 +95,7 @@ export default function PaymentStep({ locale }: Props) {
         <Button
           variant="outline"
           size="lg"
-          onClick={() => setCurrentStep(2)}
+          onClick={() => setCurrentStep(1)}
         >
           {t('checkout.back')}
         </Button>

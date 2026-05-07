@@ -2,7 +2,6 @@
 
 import { useTranslations } from 'next-intl'
 import { useCheckout } from '@/lib/checkout-context'
-import { useCart } from '@/lib/cart-context'
 import { Button } from '@/components/ui/button'
 import { Truck, Clock } from 'lucide-react'
 
@@ -23,7 +22,19 @@ type Props = {
 export default function DeliveryMethodStep({ deliveryOptions, locale }: Props) {
   const t = useTranslations()
   const { selectedDelivery, setSelectedDelivery, setCurrentStep, setDeliveryCost } = useCheckout()
-  const { total } = useCart()
+
+  const optionsToShow =
+    deliveryOptions.length > 0
+      ? deliveryOptions
+      : [
+          {
+            id: 'pickup-default',
+            name: 'In-store pickup',
+            name_vi: 'Nhận tại cửa hàng',
+            base_price: 0,
+            estimated_days: 0,
+          },
+        ]
 
   const handleSelectDelivery = (option: DeliveryOption) => {
     setSelectedDelivery({
@@ -47,7 +58,7 @@ export default function DeliveryMethodStep({ deliveryOptions, locale }: Props) {
       <h2 className="text-xl font-bold">{t('checkout.step2')}</h2>
 
       <div className="space-y-3">
-        {deliveryOptions.map((option) => (
+        {optionsToShow.map((option) => (
           <button
             key={option.id}
             onClick={() => handleSelectDelivery(option)}
@@ -66,7 +77,11 @@ export default function DeliveryMethodStep({ deliveryOptions, locale }: Props) {
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
                     <span>
-                      {option.estimated_days} {locale === 'en' ? 'days' : 'ngày'}
+                      {option.estimated_days <= 0
+                        ? locale === 'en'
+                          ? 'Pickup'
+                          : 'Lấy hàng'
+                        : `${option.estimated_days} ${locale === 'en' ? 'days' : 'ngày'}`}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">

@@ -1,15 +1,10 @@
 import { notFound } from 'next/navigation'
+import type { PostgrestError } from '@supabase/supabase-js'
 import ProductDetail from '@/components/product/product-detail'
+import { getProductBySlug, getProducts } from '@/lib/db'
+import { isSupabaseConfigured } from '@/lib/supabase'
 
-// Mock products data
-const mockProducts = [
-  { id: '1', name: 'Red Roses Bouquet', price: 45, image_url: 'https://via.placeholder.com/300x400?text=Red+Roses', category_id: '1', slug: 'red-roses-bouquet', featured: true, description: 'Beautiful red roses for special occasions', rating: 4.5, created_at: '2026-05-01' },
-  { id: '2', name: 'Sunflower Bundle', price: 35, image_url: 'https://via.placeholder.com/300x400?text=Sunflowers', category_id: '2', slug: 'sunflower-bundle', featured: true, description: 'Bright sunflowers to brighten your day', rating: 4.8, created_at: '2026-05-01' },
-  { id: '3', name: 'White Lilies', price: 50, image_url: 'https://via.placeholder.com/300x400?text=White+Lilies', category_id: '3', slug: 'white-lilies', featured: true, description: 'Elegant white lilies for elegance', rating: 4.7, created_at: '2026-05-01' },
-  { id: '4', name: 'Tulip Mix', price: 40, image_url: 'https://via.placeholder.com/300x400?text=Tulips', category_id: '4', slug: 'tulip-mix', featured: false, description: 'Colorful tulip arrangement', rating: 4.6, created_at: '2026-05-01' },
-  { id: '5', name: 'Lavender Dreams', price: 38, image_url: 'https://via.placeholder.com/300x400?text=Lavender', category_id: '5', slug: 'lavender-dreams', featured: false, description: 'Fragrant lavender bouquet', rating: 4.9, created_at: '2026-05-01' },
-  { id: '6', name: 'Daisy Delight', price: 30, image_url: 'https://via.placeholder.com/300x400?text=Daisies', category_id: '6', slug: 'daisy-delight', featured: false, description: 'Fresh daisy arrangement', rating: 4.4, created_at: '2026-05-01' },
-]
+export const dynamic = 'force-dynamic'
 
 type Props = {
   params: Promise<{
@@ -18,38 +13,98 @@ type Props = {
   }>
 }
 
+type ProductRow = {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  price: number
+  image_url: string | null
+  rating?: number | null
+  reviews_count?: number | null
+  stock?: number | null
+  category_id?: string | null
+  images_urls?: string[] | null
+}
+
+function toDetailProduct(p: ProductRow) {
+  return {
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    description: p.description ?? '',
+    price: p.price,
+    image_url: p.image_url ?? '',
+    rating: p.rating ?? 0,
+    reviews_count: p.reviews_count ?? 0,
+    stock: p.stock ?? 0,
+    images_urls: p.images_urls ?? undefined,
+  }
+}
+
+function toCardProduct(p: ProductRow) {
+  return {
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    price: p.price,
+    image_url: p.image_url ?? '',
+    rating: p.rating ?? 0,
+    reviews_count: p.reviews_count ?? 0,
+  }
+}
+
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params
-  const product = mockProducts.find(p => p.slug === slug)
-  
-  if (!product) {
+
+  if (!isSupabaseConfigured()) {
+    return { title: 'Product | Flower Shop' }
+  }
+
+  try {
+    const product = (await getProductBySlug(slug)) as ProductRow
+    return {
+      title: `${product.name} | Flower Shop`,
+      description: product.description ?? undefined,
+    }
+  } catch {
     return {
       title: 'Product Not Found',
       description: 'The product you are looking for does not exist.',
     }
   }
-
-  return {
-    title: `${product.name} | Flower Shop`,
-    description: product.description,
-  }
-}
-
-export async function generateStaticParams() {
-  return mockProducts.map((product) => ({
-    slug: product.slug,
-  }))
 }
 
 export default async function ProductPage({ params }: Props) {
   const { slug, locale } = await params
-  const product = mockProducts.find(p => p.slug === slug)
 
-  if (!product) {
+  if (!isSupabaseConfigured()) {
     notFound()
   }
 
-  const relatedProducts = mockProducts.filter((p) => p.id !== product.id).slice(0, 3)
+  let row: ProductRow
+  try {
+    row = (await getProductBySlug(slug)) as ProductRow
+  } catch (e) {
+    const err = e as PostgrestError
+    if (err?.code === 'PGRST116') {
+      notFound()
+    }
+    console.error('[shop/[slug]]', e)
+    throw e
+  }
+
+  const product = toDetailProduct(row)
+
+  let relatedRaw: ProductRow[] = []
+  try {
+    const list = (await getProducts(row.category_id ?? undefined)) as ProductRow[]
+    relatedRaw = list.filter((p) => p.id !== row.id).slice(0, 3)
+  } catch {
+    relatedRaw = []
+  }
+
+  const relatedProducts = relatedRaw.map(toCardProduct)
 
   return (
     <ProductDetail

@@ -1,11 +1,10 @@
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check } from 'lucide-react'
 
 type Props = {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ orderId?: string }>
+  searchParams: Promise<{ orderId?: string; type?: string }>
 }
 
 export async function generateMetadata({ params }: Props) {
@@ -15,7 +14,15 @@ export async function generateMetadata({ params }: Props) {
   }
 }
 
-function OrderSuccess({ locale }: { locale: string }) {
+function OrderSuccess({
+  locale,
+  variant,
+}: {
+  locale: string
+  variant: 'default' | 'home-request'
+}) {
+  const isHomeRequest = variant === 'home-request'
+
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="text-center space-y-6">
@@ -24,13 +31,23 @@ function OrderSuccess({ locale }: { locale: string }) {
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-bold">
-          {locale === 'en' ? 'Order Successful!' : 'Đặt Hàng Thành Công!'}
+          {isHomeRequest
+            ? locale === 'en'
+              ? 'Request received!'
+              : 'Đã nhận yêu cầu!'
+            : locale === 'en'
+              ? 'Order Successful!'
+              : 'Đặt Hàng Thành Công!'}
         </h1>
 
         <p className="text-gray-600 text-lg max-w-md mx-auto">
-          {locale === 'en'
-            ? 'Thank you for your order. We will process it shortly and you will receive a confirmation email.'
-            : 'Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ xử lý nó ngay và bạn sẽ nhận được email xác nhận.'}
+          {isHomeRequest
+            ? locale === 'en'
+              ? 'Check your inbox for a confirmation email. Our staff will contact you within 1 hour to confirm address and pricing.'
+              : 'Kiểm tra email xác nhận. Nhân viên sẽ liên hệ trong 1 giờ để xác nhận địa chỉ và giá.'
+            : locale === 'en'
+              ? 'Thank you for your order. We will process it shortly and you will receive a confirmation email.'
+              : 'Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ xử lý nó ngay và bạn sẽ nhận được email xác nhận.'}
         </p>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-left">
@@ -38,38 +55,69 @@ function OrderSuccess({ locale }: { locale: string }) {
             {locale === 'en' ? 'What happens next?' : 'Tiếp theo?'}
           </h2>
           <ul className="space-y-2 text-sm text-blue-900">
-            <li className="flex gap-2">
-              <span className="font-bold">1.</span>
-              <span>
-                {locale === 'en'
-                  ? 'You will receive a confirmation email with your order details'
-                  : 'Bạn sẽ nhận được email xác nhận với chi tiết đơn hàng'}
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-bold">2.</span>
-              <span>
-                {locale === 'en'
-                  ? 'Our team will prepare your flowers with care'
-                  : 'Đội của chúng tôi sẽ chuẩn bị hoa của bạn một cách cẩn thận'}
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-bold">3.</span>
-              <span>
-                {locale === 'en'
-                  ? 'You will receive a tracking number via SMS'
-                  : 'Bạn sẽ nhận được số theo dõi qua SMS'}
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-bold">4.</span>
-              <span>
-                {locale === 'en'
-                  ? 'Enjoy your beautiful flowers!'
-                  : 'Tận hưởng những bông hoa đẹp của bạn!'}
-              </span>
-            </li>
+            {isHomeRequest ? (
+              <>
+                <li className="flex gap-2">
+                  <span className="font-bold">1.</span>
+                  <span>
+                    {locale === 'en'
+                      ? 'Confirmation email sent (if mail is configured)'
+                      : 'Email xác nhận đã được gửi (nếu đã cấu hình mail)'}
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold">2.</span>
+                  <span>
+                    {locale === 'en'
+                      ? 'A staff member calls or messages you within 1 hour'
+                      : 'Nhân viên gọi hoặc nhắn tin trong vòng 1 giờ'}
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold">3.</span>
+                  <span>
+                    {locale === 'en'
+                      ? 'Agree on delivery time and final price'
+                      : 'Thống nhất giờ giao và giá cuối'}
+                  </span>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="flex gap-2">
+                  <span className="font-bold">1.</span>
+                  <span>
+                    {locale === 'en'
+                      ? 'You will receive a confirmation email with your order details'
+                      : 'Bạn sẽ nhận được email xác nhận với chi tiết đơn hàng'}
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold">2.</span>
+                  <span>
+                    {locale === 'en'
+                      ? 'Our team will prepare your flowers with care'
+                      : 'Đội của chúng tôi sẽ chuẩn bị hoa của bạn một cách cẩn thận'}
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold">3.</span>
+                  <span>
+                    {locale === 'en'
+                      ? 'You will receive a tracking number via SMS'
+                      : 'Bạn sẽ nhận được số theo dõi qua SMS'}
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold">4.</span>
+                  <span>
+                    {locale === 'en'
+                      ? 'Enjoy your beautiful flowers!'
+                      : 'Tận hưởng những bông hoa đẹp của bạn!'}
+                  </span>
+                </li>
+              </>
+            )}
           </ul>
         </div>
 
@@ -92,6 +140,8 @@ function OrderSuccess({ locale }: { locale: string }) {
 
 export default async function OrderSuccessPage({ params, searchParams }: Props) {
   const { locale } = await params
+  const sp = await searchParams
+  const variant = sp?.type === 'home-request' ? 'home-request' : 'default'
 
-  return <OrderSuccess locale={locale} />
+  return <OrderSuccess locale={locale} variant={variant} />
 }

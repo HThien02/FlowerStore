@@ -14,7 +14,8 @@ type Props = {
 
 export default function ReviewStep({ locale }: Props) {
   const t = useTranslations()
-  const { deliveryInfo, selectedDelivery, paymentInfo, setCurrentStep } = useCheckout()
+  const { deliveryInfo, selectedDelivery, paymentInfo, setCurrentStep, fulfillmentType } =
+    useCheckout()
   const { items, total, clearCart } = useCart()
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -69,14 +70,26 @@ export default function ReviewStep({ locale }: Props) {
             <span className="text-gray-600">{locale === 'en' ? 'Phone:' : 'Điện thoại:'}</span>{' '}
             <span className="font-medium">{deliveryInfo.phone}</span>
           </p>
-          <p>
-            <span className="text-gray-600">{locale === 'en' ? 'City:' : 'Thành phố:'}</span>{' '}
-            <span className="font-medium">{deliveryInfo.city}</span>
-          </p>
-          <p className="sm:col-span-2">
-            <span className="text-gray-600">{locale === 'en' ? 'Address:' : 'Địa chỉ:'}</span>{' '}
-            <span className="font-medium">{deliveryInfo.address}</span>
-          </p>
+          {fulfillmentType === 'home' && (deliveryInfo.city || deliveryInfo.address) && (
+            <>
+              <p>
+                <span className="text-gray-600">{locale === 'en' ? 'City:' : 'Thành phố:'}</span>{' '}
+                <span className="font-medium">{deliveryInfo.city}</span>
+              </p>
+              <p className="sm:col-span-2">
+                <span className="text-gray-600">{locale === 'en' ? 'Address:' : 'Địa chỉ:'}</span>{' '}
+                <span className="font-medium">{deliveryInfo.address}</span>
+              </p>
+            </>
+          )}
+          {fulfillmentType === 'pickup' && (
+            <p className="sm:col-span-2">
+              <span className="text-gray-600">{locale === 'en' ? 'Receipt:' : 'Nhận hàng:'}</span>{' '}
+              <span className="font-medium">
+                {locale === 'en' ? 'Pickup at store' : 'Nhận tại cửa hàng'}
+              </span>
+            </p>
+          )}
         </div>
       </div>
 
