@@ -1,0 +1,9 @@
+# pnpm 10+ blocks dependency install scripts unless explicitly allowed.
+# Required for Next.js (sharp, swc) on Vercel — commit this file so CI non-interactive installs work.
+packages:
+  - '.'
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
+  - sharp
