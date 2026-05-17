@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 type Props = {
   orderId: string
@@ -13,25 +14,43 @@ export default function OrderSuccessPayosStatus({ orderId, locale }: Props) {
     'pending'
   )
 
+  const [payosHint, setPayosHint] = useState<string | null>(null)
+
+  const checkPayment = useCallback(async () => {
+    const res = await fetch(`/api/orders/${orderId}/payment-status?sync=1`)
+    if (!res.ok) return false
+    const data = await res.json()
+    if (data.payment_status === 'completed') {
+      setStatus('completed')
+      setPayosHint(null)
+      return true
+    }
+    const ps = String(data.payos_status ?? '').toUpperCase()
+    const paid = Number(data.amount_paid ?? 0)
+    const remaining = Number(data.amount_remaining ?? 0)
+    if (ps === 'UNDERPAID' || ps === 'UNDER_PAY' || (paid > 0 && remaining > 0)) {
+      setStatus('underpaid')
+      setPayosHint(null)
+      return true
+    }
+    if (ps === 'PENDING' && paid === 0 && Number(data.amount) > 0) {
+      setPayosHint(
+        locale === 'vi'
+          ? 'PayOS chưa ghi nhận tiền (tiền thanh toán = 0). Cần quét QR / đúng nội dung CK trên link PayOS.'
+          : 'PayOS shows amount paid = 0. Use QR or exact transfer content from the PayOS page.'
+      )
+    }
+    return false
+  }, [orderId, locale])
+
   useEffect(() => {
     let cancelled = false
     let attempts = 0
 
     const poll = async () => {
       try {
-        const res = await fetch(`/api/orders/${orderId}/payment-status?sync=1`)
-        if (!res.ok) return
-        const data = await res.json()
-        if (cancelled) return
-        if (data.payment_status === 'completed') {
-          setStatus('completed')
-          return
-        }
-        const ps = String(data.payos_status ?? '').toUpperCase()
-        if (ps === 'UNDERPAID' || ps === 'UNDER_PAY') {
-          setStatus('underpaid')
-          return
-        }
+        const done = await checkPayment()
+        if (cancelled || done) return
       } catch {
         /* ignore */
       }
@@ -47,7 +66,7 @@ export default function OrderSuccessPayosStatus({ orderId, locale }: Props) {
     return () => {
       cancelled = true
     }
-  }, [orderId])
+  }, [orderId, checkPayment])
 
   if (status === 'completed') {
     return (
@@ -69,11 +88,31 @@ export default function OrderSuccessPayosStatus({ orderId, locale }: Props) {
 
   if (status === 'unknown') {
     return (
-      <p className="text-sm text-amber-700">
-        {locale === 'vi'
-          ? 'Nếu đã thanh toán, đơn sẽ được cập nhật trong vài phút. Liên hệ cửa hàng nếu cần.'
-          : 'If you paid, your order will update shortly. Contact us if needed.'}
-      </p>
+      <div className="space-y-3 flex flex-col items-center">
+        {payosHint && <p className="text-sm text-amber-800 max-w-md">{payosHint}</p>}
+        <p className="text-sm text-amber-700">
+          {locale === 'vi'
+            ? 'Chưa thấy xác nhận từ PayOS. Nếu đã chuyển tiền, bấm nút bên dưới hoặc đợi vài phút (webhook).'
+            : 'Payment not confirmed yet. If you already paid, tap below or wait a moment.'}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          onClick={async () => {
+            setStatus('pending')
+            try {
+              const done = await checkPayment()
+              if (!done) setStatus('unknown')
+            } catch {
+              setStatus('unknown')
+            }
+          }}
+        >
+          {locale === 'vi' ? 'Tôi đã thanh toán — kiểm tra lại' : 'I paid — check again'}
+        </Button>
+      </div>
     )
   }
 

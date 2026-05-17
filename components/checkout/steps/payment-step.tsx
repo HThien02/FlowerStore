@@ -54,6 +54,19 @@ export default function PaymentStep({ locale }: Props) {
           ? 'Giá trong hệ thống là VND. Thanh toán payOS dùng đúng số VND trên đơn.'
           : 'Prices are stored in VND. USD is shown using PAYOS_USD_TO_VND_RATE from .env.'}
       </div>
+      <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        {locale === 'vi' ? (
+          <>
+            <strong>Quan trọng:</strong> Trên trang payOS hãy <strong>quét mã QR</strong> hoặc copy đúng số
+            tiền + nội dung CK. Không tự gõ nội dung khác — PayOS sẽ không đối soát và không redirect về
+            shop.
+          </>
+        ) : (
+          <>
+            <strong>Important:</strong> On payOS, scan the QR or copy exact amount and transfer content.
+          </>
+        )}
+      </div>
 
       <div className="flex justify-between">
         <Button variant="outline" size="lg" onClick={() => setCurrentStep(1)}>

@@ -9,10 +9,26 @@ import {
 import { toPayosAmount } from '@/lib/pricing/currency'
 import { notifyOrderEvent } from '@/lib/orders/notify-order'
 
-const PAID_STATUSES = new Set(['PAID', 'PROCESSING'])
+const PAID_STATUSES = new Set(['PAID', 'PROCESSING', 'COMPLETED', 'SUCCESS'])
 
-export async function createPayosCheckoutForOrder(
-  admin: SupabaseClient,
+export type PayosSyncResult = {
+  payment_status: string
+  synced: boolean
+  payosStatus?: string
+  amount?: number
+  amountPaid?: number
+  amountRemaining?: number
+}
+
+async function cancelPayosLinkIfPending(payos: ReturnType<typeof getPayOS>, orderCode: number) {
+  try {
+    await payos.paymentRequests.cancel(orderCode)
+  } catch (e) {
+    console.warn('[payos] cancel previous link', orderCode, e)
+  }
+}
+
+export async function createPayosCheckoutForOrder(  admin: SupabaseClient,
   orderId: string,
   locale: string
 ): Promise<{ checkoutUrl: string; orderCode: number; amountVnd: number }> {
@@ -29,25 +45,41 @@ export async function createPayosCheckoutForOrder(
   }
 
   const amountVnd = toPayosAmount(Number(order.total))
-  const orderCode =
-    order.payos_order_code != null ? Number(order.payos_order_code) : generatePayosOrderCode()
+  const payos = getPayOS()
+
+  const previousCode =
+    order.payos_order_code != null && String(order.payos_order_code) !== ''
+      ? Number(order.payos_order_code)
+      : NaN
+  if (Number.isFinite(previousCode)) {
+    await cancelPayosLinkIfPending(payos, previousCode)
+  }
+
+  // Luôn mã mới + description = orderCode (≤9 số) để QR đối soát đúng
+  const orderCode = generatePayosOrderCode()
+  const description = payosDescription(orderCode)
 
   const base = getAppBaseUrl()
   const loc = locale === 'vi' ? 'vi' : 'en'
-  const returnUrl = `${base}/${loc}/order-success?orderId=${orderId}&payos=1`
+  const returnUrl = `${base}/api/payos/return?orderId=${encodeURIComponent(orderId)}&locale=${loc}`
   const cancelUrl = `${base}/${loc}/checkout?cancelled=1`
 
-  const payos = getPayOS()
-  const link = await payos.paymentRequests.create({
-    orderCode,
+  const link = await payos.paymentRequests.create({    orderCode,
     amount: amountVnd,
-    description: payosDescription(orderId),
+    description,
     returnUrl,
     cancelUrl,
   })
 
-  const { error: upErr } = await admin
-    .from('orders')
+  console.info('[payos] link created', {
+    orderId,
+    orderCode,
+    amountVnd,
+    description,
+    paymentLinkId: link.paymentLinkId,
+  })
+
+  const { error: upErr } = await admin    .from('orders')
     .update({
       payos_order_code: orderCode,
       payos_payment_link_id: link.paymentLinkId,
@@ -68,8 +100,7 @@ export async function createPayosCheckoutForOrder(
 export async function syncPayosOrderPayment(
   admin: SupabaseClient,
   orderId: string
-): Promise<{ payment_status: string; synced: boolean; payosStatus?: string }> {
-  const { data: order, error } = await admin
+): Promise<PayosSyncResult> {  const { data: order, error } = await admin
     .from('orders')
     .select('id, payment_status, payos_order_code, payos_payment_link_id')
     .eq('id', orderId)
@@ -101,23 +132,35 @@ export async function syncPayosOrderPayment(
       ? await payos.paymentRequests.get(orderCode)
       : await payos.paymentRequests.get(linkId!)
 
-    const payosStatus = String(link.status ?? '')
-    if (PAID_STATUSES.has(payosStatus) || link.amountRemaining === 0) {
-      await markOrderPaidByPayos(admin, orderId, { paymentLinkId: link.id })
-      return { payment_status: 'completed', synced: true, payosStatus }
-    }
+    const payosStatus = String(link.status ?? '').toUpperCase()
+    const amount = Number(link.amount ?? 0)
+    const amountPaid = Number(link.amountPaid ?? 0)
+    const amountRemaining = Number(link.amountRemaining ?? amount)
+    const fullyPaid =
+      PAID_STATUSES.has(payosStatus) ||
+      amountRemaining <= 0 ||
+      (amount > 0 && amountPaid >= amount)
 
-    return {
+    const baseResult: PayosSyncResult = {
       payment_status: order.payment_status ?? 'pending',
       synced: false,
       payosStatus,
+      amount,
+      amountPaid,
+      amountRemaining,
     }
+
+    if (fullyPaid) {
+      await markOrderPaidByPayos(admin, orderId, { paymentLinkId: link.id })
+      return { ...baseResult, payment_status: 'completed', synced: true }
+    }
+
+    return baseResult
   } catch (e) {
     console.error('[payos sync]', orderId, e)
     return { payment_status: order.payment_status ?? 'pending', synced: false }
   }
 }
-
 export async function markOrderPaidByPayos(
   admin: SupabaseClient,
   orderId: string,

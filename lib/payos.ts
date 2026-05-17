@@ -32,15 +32,24 @@ export function getAppBaseUrl(): string {
   return 'http://localhost:3000'
 }
 
-/** PayOS yêu cầu orderCode là số nguyên duy nhất. */
+/**
+ * Mã đơn PayOS: số nguyên ≤9 chữ số (theo mẫu chính thức).
+ * Tránh timestamp 13+ chữ số — QR/đối soát ngân hàng dễ lỗi.
+ */
 export function generatePayosOrderCode(): number {
-  return Date.now() * 10 + Math.floor(Math.random() * 10)
+  const tail = Date.now() % 10_000_000 // 7 chữ số
+  const rand = Math.floor(Math.random() * 100) // 2 chữ số
+  const code = tail * 100 + rand
+  return code > 0 ? code : Math.floor(Math.random() * 900_000_000) + 100_000_000
 }
 
-/** Mô tả chuyển khoản (giới hạn ~25 ký tự). */
-export function payosDescription(orderId: string): string {
-  const short = orderId.replace(/-/g, '').slice(-10)
-  return `TF-${short}`.slice(0, 25)
+/**
+ * Nội dung chuyển khoản trên QR — phải khớp để PayOS tự đối soát.
+ * TK chưa liên kết VA: tối đa 9 ký tự (theo docs payOS).
+ */
+export function payosDescription(orderCode: number): string {
+  const s = String(orderCode).replace(/\D/g, '')
+  return s.length <= 9 ? s : s.slice(-9)
 }
 
 export { toPayosAmount, formatMoney } from '@/lib/pricing/currency'

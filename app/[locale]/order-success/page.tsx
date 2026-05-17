@@ -4,11 +4,20 @@ import { Check } from 'lucide-react'
 import OrderSuccessPayosStatus from '@/components/order/order-success-payos-status'
 import { isPayOSConfigured } from '@/lib/payos'
 import { syncPayosOrderPayment } from '@/lib/orders/payos-payment'
+import { resolveOrderIdForPayosReturn } from '@/lib/orders/payos-return'
 import { getSupabaseServerClient } from '@/lib/supabase'
 
 type Props = {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ orderId?: string; type?: string; payos?: string }>
+  searchParams: Promise<{
+    orderId?: string
+    type?: string
+    payos?: string
+    orderCode?: string
+    code?: string
+    status?: string
+    cancel?: string
+  }>
 }
 
 export async function generateMetadata({ params }: Props) {
@@ -160,13 +169,26 @@ export default async function OrderSuccessPage({ params, searchParams }: Props) 
   const { locale } = await params
   const sp = await searchParams
   const variant = sp?.type === 'home-request' ? 'home-request' : 'default'
-  const orderId = sp?.orderId
-  const payosReturn = sp?.payos === '1'
+  const payosReturn =
+    sp?.payos === '1' ||
+    sp?.orderCode != null ||
+    sp?.code === '00' ||
+    String(sp?.status ?? '').toUpperCase() === 'PAID'
 
-  if (payosReturn && orderId && isPayOSConfigured()) {
+  let orderId = sp?.orderId
+  if (payosReturn && isPayOSConfigured()) {
     try {
       const admin = getSupabaseServerClient()
-      await syncPayosOrderPayment(admin, orderId)
+      if (!orderId) {
+        orderId =
+          (await resolveOrderIdForPayosReturn(admin, {
+            orderId: sp?.orderId,
+            orderCode: sp?.orderCode,
+          })) ?? undefined
+      }
+      if (orderId) {
+        await syncPayosOrderPayment(admin, orderId)
+      }
     } catch (e) {
       console.error('[order-success] payos sync', e)
     }

@@ -26,6 +26,9 @@ export async function GET(request: NextRequest, { params }: Params) {
         payment_status: result.payment_status,
         synced: result.synced,
         payos_status: result.payosStatus,
+        amount: result.amount,
+        amount_paid: result.amountPaid,
+        amount_remaining: result.amountRemaining,
       })
     }
 
