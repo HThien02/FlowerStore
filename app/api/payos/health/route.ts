@@ -9,13 +9,14 @@ export async function GET() {
 
   return NextResponse.json({
     ok: true,
-    payosIntegration: 'v3-vqrio-description',
+    payosIntegration: 'v4-vqrio-6digit',
     payosConfigured: isPayOSConfigured(),
     sampleOrderCode: sample,
     sampleDescription: description,
     descriptionUsesVqrioPrefix: vqrioFormat,
+    descriptionLength: description.length,
     hint: vqrioFormat
-      ? 'OK — mô tả đơn dạng VQRIO{orderCode} (vd VQRIO123), khớp webhook PayOS'
+      ? 'OK — orderCode 6 số, mô tả VQRIO{code} (≤11 ký tự). Deploy + đơn mới + quét QR.'
       : 'BUG — description không đúng định dạng VQRIO',
   })
 }

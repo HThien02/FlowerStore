@@ -6,7 +6,7 @@ import {
   isPayOSConfigured,
   payosDescription,
 } from '@/lib/payos'
-import { toPayosAmount } from '@/lib/pricing/currency'
+import { roundPayosAmount } from '@/lib/payos'
 import { notifyOrderEvent } from '@/lib/orders/notify-order'
 
 const PAID_STATUSES = new Set(['PAID', 'PROCESSING', 'COMPLETED', 'SUCCESS'])
@@ -32,7 +32,7 @@ export async function createPayosCheckoutForOrder(
   admin: SupabaseClient,
   orderId: string,
   locale: string
-): Promise<{ checkoutUrl: string; orderCode: number; amountVnd: number; description: string }> {
+): Promise<{ checkoutUrl: string; orderCode: number; amount: number; description: string }> {
   const { data: order, error } = await admin
     .from('orders')
     .select('id, total, payment_status, payos_order_code')
@@ -45,7 +45,7 @@ export async function createPayosCheckoutForOrder(
     throw new Error('Order already paid')
   }
 
-  const amountVnd = toPayosAmount(Number(order.total))
+  const amount = roundPayosAmount(Number(order.total))
   const payos = getPayOS()
 
   const previousCode =
@@ -61,12 +61,12 @@ export async function createPayosCheckoutForOrder(
 
   const base = getAppBaseUrl()
   const loc = locale === 'vi' ? 'vi' : 'en'
-  const returnUrl = `${base}/api/payos/return?orderId=${encodeURIComponent(orderId)}&locale=${loc}`
+  const returnUrl = `${base}/api/payos/return/${encodeURIComponent(orderId)}?locale=${loc}`
   const cancelUrl = `${base}/${loc}/checkout?cancelled=1`
 
   const link = await payos.paymentRequests.create({
     orderCode,
-    amount: amountVnd,
+    amount,
     description,
     returnUrl,
     cancelUrl,
@@ -75,9 +75,12 @@ export async function createPayosCheckoutForOrder(
   console.info('[payos] link created', {
     orderId,
     orderCode,
-    amountVnd,
+    amount,
     description,
+    descriptionLength: description.length,
     paymentLinkId: link.paymentLinkId,
+    returnUrl,
+    cancelUrl,
   })
 
   const { error: upErr } = await admin
@@ -92,7 +95,12 @@ export async function createPayosCheckoutForOrder(
 
   if (upErr) throw upErr
 
-  return { checkoutUrl: link.checkoutUrl, orderCode, amountVnd, description }
+  return {
+    checkoutUrl: link.checkoutUrl,
+    orderCode,
+    amount: Number(link.amount ?? amount),
+    description,
+  }
 }
 
 /**

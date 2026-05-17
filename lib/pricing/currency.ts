@@ -34,7 +34,7 @@ export function formatMoney(amountVnd: number, locale: MoneyLocale): string {
   }).format(usd)
 }
 
-/** PayOS: total đơn đã là VND. */
+/** @deprecated Dùng roundPayosAmount từ lib/payos */
 export function toPayosAmount(totalVnd: number): number {
   return Math.max(roundVnd(totalVnd), 1000)
 }

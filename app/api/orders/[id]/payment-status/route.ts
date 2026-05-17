@@ -27,8 +27,8 @@ export async function GET(request: NextRequest, { params }: Params) {
         synced: result.synced,
         payos_status: result.payosStatus,
         amount: result.amount,
-        amount_paid: result.amountPaid,
-        amount_remaining: result.amountRemaining,
+        amountPaid: result.amountPaid,
+        amountRemaining: result.amountRemaining,
       })
     }
 

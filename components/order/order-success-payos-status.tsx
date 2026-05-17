@@ -26,8 +26,8 @@ export default function OrderSuccessPayosStatus({ orderId, locale }: Props) {
       return true
     }
     const ps = String(data.payos_status ?? '').toUpperCase()
-    const paid = Number(data.amount_paid ?? 0)
-    const remaining = Number(data.amount_remaining ?? 0)
+    const paid = Number(data.amountPaid ?? data.amount_paid ?? 0)
+    const remaining = Number(data.amountRemaining ?? data.amount_remaining ?? 0)
     if (ps === 'UNDERPAID' || ps === 'UNDER_PAY' || (paid > 0 && remaining > 0)) {
       setStatus('underpaid')
       setPayosHint(null)
