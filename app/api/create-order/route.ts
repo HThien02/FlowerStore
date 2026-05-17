@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
 
     let checkoutUrl: string | undefined
     let amountVnd: number | undefined
+    let payosOrderCode: number | undefined
+    let payosDescriptionText: string | undefined
 
     if (usePayos) {
       const admin = getSupabaseServerClient()
@@ -70,6 +72,8 @@ export async function POST(request: NextRequest) {
       )
       checkoutUrl = payos.checkoutUrl
       amountVnd = payos.amountVnd
+      payosOrderCode = payos.orderCode
+      payosDescriptionText = String(payos.orderCode)
     }
 
     return NextResponse.json({
@@ -77,6 +81,8 @@ export async function POST(request: NextRequest) {
       total: result.total,
       checkoutUrl,
       amountVnd,
+      payosOrderCode,
+      payosDescription: payosDescriptionText,
       prepScheduledAt: result.assignment.prepAt.toISOString(),
       staffId: result.assignment.staffId,
     })

@@ -5,11 +5,18 @@
 import { createClient } from '@supabase/supabase-js'
 import { PayOS } from '@payos/node'
 
-const orderId = process.argv[2]
-if (!orderId) {
-  console.error('Usage: node --env-file=.env.local scripts/check-payos-order.mjs <orderId>')
+const arg = process.argv[2]
+if (!arg) {
+  console.error(
+    'Usage:\n' +
+      '  node --env-file=.env.local scripts/check-payos-order.mjs <orderId-uuid>\n' +
+      '  node --env-file=.env.local scripts/check-payos-order.mjs --code=177902827'
+  )
   process.exit(1)
 }
+
+const byCode = arg.startsWith('--code=') ? arg.slice(7) : null
+const orderId = !byCode ? arg : null
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -22,11 +29,17 @@ const payos = new PayOS({
   checksumKey: process.env.PAYOS_CHECKSUM_KEY,
 })
 
-const { data: order, error } = await admin
+let query = admin
   .from('orders')
   .select('id, total, payment_status, payos_order_code, payos_payment_link_id, created_at')
-  .eq('id', orderId)
-  .single()
+
+if (byCode) {
+  query = query.eq('payos_order_code', Number(byCode))
+} else {
+  query = query.eq('id', orderId)
+}
+
+const { data: order, error } = await query.maybeSingle()
 
 if (error || !order) {
   console.error('Order not found:', error?.message)
