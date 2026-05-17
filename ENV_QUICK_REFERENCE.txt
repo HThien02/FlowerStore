@@ -1,0 +1,77 @@
+===============================================
+QUICK .env.local SETUP REFERENCE
+===============================================
+
+STEP 1: Copy Template
+  $ cp .env.local.example .env.local
+
+STEP 2: Gmail Setup
+  A. Enable 2FA: https://myaccount.google.com/security
+  B. Generate App Password: https://myaccount.google.com/apppasswords
+  C. Copy 16-character password
+
+STEP 3: Edit .env.local
+  SMTP_HOST=smtp.gmail.com
+  SMTP_PORT=587
+  SMTP_USER=your_email@gmail.com
+  SMTP_PASS=your_16_char_password
+  SMTP_FROM=noreply@flowerstore.com
+
+STEP 4: Save File
+  Ctrl+S
+
+STEP 5: Start Server
+  $ npm run dev
+
+STEP 6: Test Email
+  - Create order: http://localhost:3000/shop
+  - Check email: http://localhost:3000/admin/emails
+  - Status should be: "sent" ✅
+
+===============================================
+COMMON ISSUES
+===============================================
+
+❌ SMTP Connection Failed
+  → Check SMTP_HOST and SMTP_PORT
+  → Check internet connection
+  → Try disable VPN
+
+❌ Authentication Failed
+  → Check SMTP_USER (email address)
+  → Check SMTP_PASS (16-character)
+  → Create new App Password
+
+❌ Email Not Received
+  → Check spam folder
+  → Verify email address correct
+  → Check /admin/emails for errors
+
+===============================================
+SECURITY
+===============================================
+
+✅ .env.local is in .gitignore
+✅ NEVER commit .env.local to GitHub
+✅ Keep SMTP_PASS secret!
+✅ Check: git status | grep env.local
+
+===============================================
+ALTERNATIVE PROVIDERS
+===============================================
+
+Outlook:
+  SMTP_HOST=smtp.office365.com
+  SMTP_PORT=587
+  SMTP_USER=your_email@outlook.com
+
+SendGrid:
+  SMTP_HOST=smtp.sendgrid.net
+  SMTP_PORT=587
+  SMTP_USER=apikey
+  SMTP_PASS=SG.your_key
+
+===============================================
+DONE! Your .env.local is ready.
+Test by creating an order and checking /admin/emails
+===============================================
