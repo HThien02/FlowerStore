@@ -7,7 +7,11 @@ import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
-import { orderTotalWithFees, isOutsideBusinessHours } from '@/lib/pricing/business-hours'
+import {
+  orderTotalWithFees,
+  isOutsideBusinessHours,
+  formatScheduledAtVietnam,
+} from '@/lib/pricing/business-hours'
 import PriceDisplay from '@/components/price-display'
 
 type Props = {
@@ -110,10 +114,7 @@ export default function ReviewStep({ locale }: Props) {
   }
 
   const fmtSchedule = deliveryInfo.scheduledAt
-    ? new Date(deliveryInfo.scheduledAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })
+    ? formatScheduledAtVietnam(deliveryInfo.scheduledAt)
     : '—'
 
   return (
@@ -175,9 +176,24 @@ export default function ReviewStep({ locale }: Props) {
         {outsideHours && (
           <p className="text-xs text-amber-600">
             {locale === 'vi'
-              ? 'Nhận/giao ngoài 8h–18h: phụ thu 10% đã cộng vào tổng.'
-              : 'Outside 8am–6pm: 10% surcharge included.'}
+              ? 'Giờ nhận ngoài 8h–18h (giờ VN): phụ thu 10% đã cộng vào tổng.'
+              : 'Pickup outside 8am–6pm VN time: 10% surcharge included.'}
           </p>
+        )}
+        {paymentInfo.method === 'payos' && (
+          <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+            <p className="font-semibold">
+              {locale === 'vi' ? 'Số tiền cần chuyển qua PayOS' : 'Amount to pay via PayOS'}
+            </p>
+            <p className="text-xl font-bold mt-1">
+              <PriceDisplay amountVnd={finalTotal} />
+            </p>
+            <p className="text-xs text-rose-800/80 mt-1">
+              {locale === 'vi'
+                ? 'Vui lòng chuyển đúng số tiền trên. Chuyển thiếu (ví dụ chỉ 10.000₫) thì PayOS vẫn hiển thị chờ thanh toán.'
+                : 'Transfer exactly this amount. Underpaying keeps the link pending on PayOS.'}
+            </p>
+          </div>
         )}
       </div>
 

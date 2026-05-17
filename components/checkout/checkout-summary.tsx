@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart-context'
 import { useCheckout } from '@/lib/checkout-context'
 import PriceDisplay from '@/components/price-display'
+import { isOutsideBusinessHours, orderTotalWithFees } from '@/lib/pricing/business-hours'
 
 type Props = {
   locale: string
@@ -12,10 +13,18 @@ type Props = {
 export default function CheckoutSummary({ locale }: Props) {
   const t = useTranslations()
   const { items, total } = useCart()
-  const { selectedDelivery, deliveryCost, fulfillmentType } = useCheckout()
+  const { selectedDelivery, deliveryCost, fulfillmentType, deliveryInfo } = useCheckout()
 
   const subtotal = total
-  const finalTotal = subtotal + deliveryCost
+  const scheduledDate = deliveryInfo.scheduledAt ? new Date(deliveryInfo.scheduledAt) : null
+  const fees =
+    scheduledDate && !Number.isNaN(scheduledDate.getTime())
+      ? orderTotalWithFees(subtotal, deliveryCost, scheduledDate)
+      : { afterHoursFee: 0, total: subtotal + deliveryCost }
+  const afterHoursFee = fees.afterHoursFee
+  const finalTotal = fees.total
+  const outsideHours =
+    scheduledDate && !Number.isNaN(scheduledDate.getTime()) && isOutsideBusinessHours(scheduledDate)
 
   const showDeliveryLine = fulfillmentType === 'pickup' && selectedDelivery
   const homeFlow = fulfillmentType === 'home'
@@ -59,6 +68,12 @@ export default function CheckoutSummary({ locale }: Props) {
             </span>
           </div>
         )}
+        {afterHoursFee > 0 && (
+          <div className="flex justify-between text-amber-700 text-sm">
+            <span>{locale === 'vi' ? 'Phụ thu ngoài giờ (10%)' : 'After-hours (10%)'}</span>
+            <span>+<PriceDisplay amountVnd={afterHoursFee} /></span>
+          </div>
+        )}
       </div>
 
       {/* Total */}
@@ -74,6 +89,13 @@ export default function CheckoutSummary({ locale }: Props) {
           )}
         </span>
       </div>
+      {outsideHours && !homeFlow && (
+        <p className="text-xs text-amber-600 mt-2">
+          {locale === 'vi'
+            ? 'Giờ nhận ngoài 8h–18h (giờ VN): đã cộng phụ thu 10%. PayOS sẽ thu đúng tổng bên dưới.'
+            : 'Pickup outside 8am–6pm (VN time): 10% surcharge included in total below.'}
+        </p>
+      )}
 
       {/* Selected options */}
       {selectedDelivery && fulfillmentType === 'pickup' && (

@@ -9,7 +9,9 @@ type Props = {
 }
 
 export default function OrderSuccessPayosStatus({ orderId, locale }: Props) {
-  const [status, setStatus] = useState<'pending' | 'completed' | 'unknown'>('pending')
+  const [status, setStatus] = useState<'pending' | 'completed' | 'unknown' | 'underpaid'>(
+    'pending'
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -23,6 +25,11 @@ export default function OrderSuccessPayosStatus({ orderId, locale }: Props) {
         if (cancelled) return
         if (data.payment_status === 'completed') {
           setStatus('completed')
+          return
+        }
+        const ps = String(data.payos_status ?? '').toUpperCase()
+        if (ps === 'UNDERPAID' || ps === 'UNDER_PAY') {
+          setStatus('underpaid')
           return
         }
       } catch {
@@ -46,6 +53,16 @@ export default function OrderSuccessPayosStatus({ orderId, locale }: Props) {
     return (
       <p className="text-sm text-green-700 font-medium">
         {locale === 'vi' ? 'Thanh toán đã được xác nhận.' : 'Payment confirmed.'}
+      </p>
+    )
+  }
+
+  if (status === 'underpaid') {
+    return (
+      <p className="text-sm text-amber-700">
+        {locale === 'vi'
+          ? 'PayOS ghi nhận chuyển thiếu so với số tiền trên link. Vui lòng chuyển bổ sung đúng phần còn thiếu trên trang PayOS hoặc đặt đơn mới.'
+          : 'PayOS shows an underpayment. Complete the remaining amount on PayOS or place a new order.'}
       </p>
     )
   }
