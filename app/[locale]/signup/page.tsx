@@ -18,7 +18,8 @@ export default function SignupPage() {
   const router = useRouter()
   const { signUp } = useAuth()
 
-  const [fullName, setFullName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -32,10 +33,15 @@ export default function SignupPage() {
       return
     }
 
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error(locale === 'en' ? 'Please enter first and last name' : 'Vui lòng nhập tên và họ')
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      await signUp(email, password, fullName)
+      await signUp(email, password, `${firstName.trim()} ${lastName.trim()}`)
       toast.success(locale === 'en' ? 'Account created successfully!' : 'Tạo tài khoản thành công!')
       router.push(`/${locale}/login`)
     } catch (error: any) {
@@ -61,9 +67,21 @@ export default function SignupPage() {
               <Input
                 id="firstName"
                 type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
                 placeholder={t('auth.firstName')}
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <div>
+              <Label htmlFor="lastName">{t('auth.lastName')}</Label>
+              <Input
+                id="lastName"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder={t('auth.lastName')}
                 required
                 disabled={isLoading}
               />

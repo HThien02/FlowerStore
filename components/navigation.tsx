@@ -11,8 +11,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ShoppingCart, User, Search } from 'lucide-react'
+import { ShoppingCart, User, Search, LogOut } from 'lucide-react'
 import { useCart } from '@/lib/cart-context'
+import { useAuth } from '@/lib/auth-context'
+import { toast } from 'sonner'
 
 export default function Navigation() {
   const t = useTranslations()
@@ -20,11 +22,24 @@ export default function Navigation() {
   const router = useRouter()
   const pathname = usePathname()
   const { itemCount } = useCart()
+  const { user, isLoading, signOut } = useAuth()
 
   const toggleLanguage = () => {
     const newLocale = locale === 'en' ? 'vi' : 'en'
     const newPathname = pathname.replace(`/${locale}`, `/${newLocale}`)
     router.push(newPathname)
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      toast.success(locale === 'en' ? 'Signed out successfully' : 'Đăng xuất thành công')
+      router.push(`/${locale}`)
+      router.refresh()
+    } catch (error) {
+      console.error('[v0] Sign out error:', error)
+      toast.error(locale === 'en' ? 'Failed to sign out' : 'Đăng xuất thất bại')
+    }
   }
 
   return (
@@ -92,15 +107,36 @@ export default function Navigation() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link href={`/${locale}/login`}>{t('account.login')}</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href={`/${locale}/signup`}>{t('account.signup')}</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href={`/${locale}/account`}>{t('account.profile')}</Link>
-                </DropdownMenuItem>
+                {isLoading && (
+                  <DropdownMenuItem disabled>
+                    {locale === 'en' ? 'Loading...' : 'Đang tải...'}
+                  </DropdownMenuItem>
+                )}
+                {!isLoading && !user && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${locale}/login`}>{t('account.login')}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${locale}/signup`}>{t('account.signup')}</Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {!isLoading && user && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${locale}/account`}>{t('account.profile')}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${locale}/admin/orders`}>Admin</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      {locale === 'en' ? 'Sign out' : 'Đăng xuất'}
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

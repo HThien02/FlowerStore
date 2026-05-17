@@ -18,12 +18,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const ensureUserProfile = async (u: User) => {
+    try {
+      const fullName =
+        (u.user_metadata?.full_name as string | undefined) ??
+        [
+          u.user_metadata?.first_name as string | undefined,
+          u.user_metadata?.last_name as string | undefined,
+        ]
+          .filter(Boolean)
+          .join(' ')
+
+      const { error: insertError } = await supabase
+        .from('user_profiles')
+        .upsert(
+          {
+            id: u.id,
+            email: u.email,
+            full_name: fullName || null,
+          },
+          { onConflict: 'id', ignoreDuplicates: true }
+        )
+
+      if (insertError) {
+        console.error('[Auth] Error creating user profile:', insertError)
+      }
+    } catch (e) {
+      console.error('[Auth] ensureUserProfile failed:', e)
+    }
+  }
+
   useEffect(() => {
+    const loadingGuard = setTimeout(() => {
+      setIsLoading(false)
+    }, 4000)
+
     if (!isSupabaseConfigured()) {
       console.warn(
         '[Auth] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Add them in Vercel → Settings → Environment Variables and redeploy.'
       )
       setIsLoading(false)
+      clearTimeout(loadingGuard)
       return
     }
 
@@ -32,11 +67,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const {
           data: { session },
         } = await supabase.auth.getSession()
-        setUser(session?.user ?? null)
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+        if (currentUser) {
+          void ensureUserProfile(currentUser)
+        }
       } catch (error) {
         console.error('[v0] Error checking session:', error)
       } finally {
         setIsLoading(false)
+        clearTimeout(loadingGuard)
       }
     }
 
@@ -44,11 +84,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      setIsLoading(false)
+      if (currentUser) {
+        void ensureUserProfile(currentUser)
+      }
     })
 
-    return () => subscription?.unsubscribe()
+    return () => {
+      clearTimeout(loadingGuard)
+      subscription?.unsubscribe()
+    }
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string) => {
@@ -57,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY on the server and redeploy.'
       )
     }
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -68,6 +116,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     if (error) throw error
+    if (data.user) {
+      await ensureUserProfile(data.user)
+    }
   }
 
   const signIn = async (email: string, password: string) => {
