@@ -17,7 +17,7 @@ export default function OrderSuccessPayosStatus({ orderId, locale }: Props) {
 
     const poll = async () => {
       try {
-        const res = await fetch(`/api/orders/${orderId}/payment-status`)
+        const res = await fetch(`/api/orders/${orderId}/payment-status?sync=1`)
         if (!res.ok) return
         const data = await res.json()
         if (cancelled) return

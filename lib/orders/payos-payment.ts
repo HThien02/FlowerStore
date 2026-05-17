@@ -1,7 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { generatePayosOrderCode, getAppBaseUrl, getPayOS, payosDescription } from '@/lib/payos'
+import {
+  generatePayosOrderCode,
+  getAppBaseUrl,
+  getPayOS,
+  isPayOSConfigured,
+  payosDescription,
+} from '@/lib/payos'
 import { toPayosAmount } from '@/lib/pricing/currency'
 import { notifyOrderEvent } from '@/lib/orders/notify-order'
+
+const PAID_STATUSES = new Set(['PAID', 'PROCESSING'])
 
 export async function createPayosCheckoutForOrder(
   admin: SupabaseClient,
@@ -51,6 +59,63 @@ export async function createPayosCheckoutForOrder(
   if (upErr) throw upErr
 
   return { checkoutUrl: link.checkoutUrl, orderCode, amountVnd }
+}
+
+/**
+ * Đồng bộ trạng thái từ PayOS API (khi webhook chưa kịp / chưa cấu hình).
+ * Gọi sau khi khách quay về returnUrl hoặc khi poll payment-status.
+ */
+export async function syncPayosOrderPayment(
+  admin: SupabaseClient,
+  orderId: string
+): Promise<{ payment_status: string; synced: boolean; payosStatus?: string }> {
+  const { data: order, error } = await admin
+    .from('orders')
+    .select('id, payment_status, payos_order_code, payos_payment_link_id')
+    .eq('id', orderId)
+    .single()
+
+  if (error || !order) throw new Error('Order not found')
+
+  if (order.payment_status === 'completed') {
+    return { payment_status: 'completed', synced: false }
+  }
+
+  if (!isPayOSConfigured()) {
+    return { payment_status: order.payment_status ?? 'pending', synced: false }
+  }
+
+  const orderCode =
+    order.payos_order_code != null && order.payos_order_code !== ''
+      ? Number(order.payos_order_code)
+      : NaN
+  const linkId = order.payos_payment_link_id as string | null
+
+  if (!Number.isFinite(orderCode) && !linkId) {
+    return { payment_status: order.payment_status ?? 'pending', synced: false }
+  }
+
+  try {
+    const payos = getPayOS()
+    const link = Number.isFinite(orderCode)
+      ? await payos.paymentRequests.get(orderCode)
+      : await payos.paymentRequests.get(linkId!)
+
+    const payosStatus = String(link.status ?? '')
+    if (PAID_STATUSES.has(payosStatus) || link.amountRemaining === 0) {
+      await markOrderPaidByPayos(admin, orderId, { paymentLinkId: link.id })
+      return { payment_status: 'completed', synced: true, payosStatus }
+    }
+
+    return {
+      payment_status: order.payment_status ?? 'pending',
+      synced: false,
+      payosStatus,
+    }
+  } catch (e) {
+    console.error('[payos sync]', orderId, e)
+    return { payment_status: order.payment_status ?? 'pending', synced: false }
+  }
 }
 
 export async function markOrderPaidByPayos(

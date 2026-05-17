@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check } from 'lucide-react'
 import OrderSuccessPayosStatus from '@/components/order/order-success-payos-status'
+import { isPayOSConfigured } from '@/lib/payos'
+import { syncPayosOrderPayment } from '@/lib/orders/payos-payment'
+import { getSupabaseServerClient } from '@/lib/supabase'
 
 type Props = {
   params: Promise<{ locale: string }>
@@ -159,6 +162,15 @@ export default async function OrderSuccessPage({ params, searchParams }: Props) 
   const variant = sp?.type === 'home-request' ? 'home-request' : 'default'
   const orderId = sp?.orderId
   const payosReturn = sp?.payos === '1'
+
+  if (payosReturn && orderId && isPayOSConfigured()) {
+    try {
+      const admin = getSupabaseServerClient()
+      await syncPayosOrderPayment(admin, orderId)
+    } catch (e) {
+      console.error('[order-success] payos sync', e)
+    }
+  }
 
   return (
     <OrderSuccess
