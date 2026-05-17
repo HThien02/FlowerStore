@@ -13,10 +13,11 @@ export function isOutsideBusinessHours(scheduledAt: Date): boolean {
   return m < BUSINESS_HOUR_START * 60 || m >= BUSINESS_HOUR_END * 60
 }
 
+/** subtotal, deliveryCost: VND (số nguyên). */
 export function calcAfterHoursFee(subtotal: number, deliveryCost: number, scheduledAt: Date): number {
   if (!isOutsideBusinessHours(scheduledAt)) return 0
   const base = subtotal + deliveryCost
-  return Math.round(base * AFTER_HOURS_SURCHARGE_RATE * 100) / 100
+  return Math.round(base * AFTER_HOURS_SURCHARGE_RATE)
 }
 
 export function orderTotalWithFees(
@@ -27,6 +28,6 @@ export function orderTotalWithFees(
   const afterHoursFee = calcAfterHoursFee(subtotal, deliveryCost, scheduledAt)
   return {
     afterHoursFee,
-    total: Math.round((subtotal + deliveryCost + afterHoursFee) * 100) / 100,
+    total: subtotal + deliveryCost + afterHoursFee,
   }
 }

@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT,
   description_vi TEXT,
   category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
-  price DECIMAL(10, 2) NOT NULL,
+  price DECIMAL(12, 0) NOT NULL, -- VND (số nguyên, vd. 10000)
   image_url TEXT NOT NULL,
   images_urls TEXT[], -- Up to 5 gallery URLs (index 0 = main; legacy: only slots 2–5)
   stock INTEGER NOT NULL DEFAULT 0,

@@ -1,5 +1,6 @@
 import { escapeHtml } from '../escape-html'
 import { emailShell } from '../layout'
+import { formatMoney } from '@/lib/pricing/currency'
 
 export type LineItem = {
   productName?: string
@@ -33,7 +34,7 @@ export function homeDeliveryCustomerEmail(
 ): { subject: string; html: string } {
   const { deliveryInfo, items, subtotal } = data
   const name = `${deliveryInfo.firstName ?? ''} ${deliveryInfo.lastName ?? ''}`.trim()
-  const sub = Number(subtotal ?? 0).toFixed(2)
+  const subVnd = Number(subtotal ?? 0)
 
   const rows = items
     .map(
@@ -41,7 +42,7 @@ export function homeDeliveryCustomerEmail(
         `<tr>
           <td style="padding:10px 12px;border-bottom:1px solid #e4e4e7;">${escapeHtml(String(i.productName ?? ''))}</td>
           <td style="padding:10px 12px;border-bottom:1px solid #e4e4e7;text-align:center;">${i.quantity ?? 0}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #e4e4e7;text-align:right;">$${Number(i.price ?? 0).toFixed(2)}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e4e4e7;text-align:right;">${formatMoney(Number(i.price ?? 0) * (i.quantity ?? 1), locale)}</td>
         </tr>`
     )
     .join('')
@@ -68,7 +69,7 @@ export function homeDeliveryCustomerEmail(
         </thead>
         <tbody>${rows}</tbody>
       </table>
-      <p style="margin-top:16px;"><strong>Tạm tính:</strong> $${sub}</p>
+      <p style="margin-top:16px;"><strong>Tạm tính:</strong> ${formatMoney(subVnd, 'vi')}</p>
       <p style="margin-top:24px;font-size:13px;color:#71717a;">Đây là email tự động. Nếu bạn không gửi yêu cầu này, vui lòng bỏ qua.</p>
     `
     return {
@@ -103,7 +104,7 @@ export function homeDeliveryCustomerEmail(
       </thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="margin-top:16px;"><strong>Subtotal:</strong> $${sub}</p>
+    <p style="margin-top:16px;"><strong>Subtotal:</strong> ${formatMoney(subVnd, 'en')}</p>
     <p style="margin-top:24px;font-size:13px;color:#71717a;">This is an automated message. If you did not submit this request, you can ignore this email.</p>
   `
   return {
@@ -120,7 +121,7 @@ export function homeDeliveryCustomerEmail(
 /** Email nội bộ / cửa hàng khi có yêu cầu giao tại nhà. */
 export function homeDeliveryStaffEmail(data: HomeDeliveryForm): { subject: string; html: string } {
   const { deliveryInfo, items, subtotal } = data
-  const sub = Number(subtotal ?? 0).toFixed(2)
+  const subVnd = Number(subtotal ?? 0)
 
   const rows = items
     .map(
@@ -128,7 +129,7 @@ export function homeDeliveryStaffEmail(data: HomeDeliveryForm): { subject: strin
         `<tr>
           <td style="padding:8px;border-bottom:1px solid #e4e4e7;">${escapeHtml(String(i.productName ?? ''))}</td>
           <td style="padding:8px;border-bottom:1px solid #e4e4e7;">${i.quantity ?? 0}</td>
-          <td style="padding:8px;border-bottom:1px solid #e4e4e7;text-align:right;">$${Number(i.price ?? 0).toFixed(2)}</td>
+          <td style="padding:8px;border-bottom:1px solid #e4e4e7;text-align:right;">${formatMoney(Number(i.price ?? 0) * (i.quantity ?? 1), 'vi')}</td>
         </tr>`
     )
     .join('')
@@ -144,7 +145,7 @@ export function homeDeliveryStaffEmail(data: HomeDeliveryForm): { subject: strin
       <thead><tr style="background:#fafafa;"><th align="left" style="padding:8px;">Sản phẩm</th><th style="padding:8px;">SL</th><th align="right" style="padding:8px;">Giá</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="margin-top:12px;"><strong>Tạm tính:</strong> $${sub}</p>
+    <p style="margin-top:12px;"><strong>Tạm tính:</strong> ${formatMoney(subVnd, 'vi')}</p>
   `
 
   return {

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/cart-context'
 import CartItemRow from '@/components/cart/cart-item-row'
 import { ShoppingBag, ArrowRight } from 'lucide-react'
+import PriceDisplay from '@/components/price-display'
 
 type Props = {
   locale: string
@@ -64,7 +65,7 @@ export function CartPageClient({ locale }: Props) {
                     {item.productName} × {item.quantity}
                   </span>
                   <span className="font-medium">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    <PriceDisplay amountVnd={item.price * item.quantity} />
                   </span>
                 </div>
               ))}
@@ -73,7 +74,9 @@ export function CartPageClient({ locale }: Props) {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('cart.subtotal')}</span>
-                <span className="font-medium">${total.toFixed(2)}</span>
+                <span className="font-medium">
+                  <PriceDisplay amountVnd={total} />
+                </span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>{t('cart.delivery')}</span>

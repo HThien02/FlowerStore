@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { orderTotalWithFees, isOutsideBusinessHours } from '@/lib/pricing/business-hours'
+import PriceDisplay from '@/components/price-display'
 
 type Props = {
   locale: string
@@ -146,29 +147,29 @@ export default function ReviewStep({ locale }: Props) {
       <div className="border-t pt-4 space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-600">{locale === 'vi' ? 'Tạm tính' : 'Subtotal'}</span>
-          <span>${subtotal.toFixed(2)}</span>
+          <PriceDisplay amountVnd={subtotal} />
         </div>
         {deliveryCost > 0 && (
           <div className="flex justify-between">
             <span className="text-gray-600">{locale === 'vi' ? 'Giao hàng' : 'Delivery'}</span>
-            <span>${deliveryCost.toFixed(2)}</span>
+            <PriceDisplay amountVnd={deliveryCost} />
           </div>
         )}
         {afterHoursFee > 0 && (
           <div className="flex justify-between text-amber-700">
             <span>{locale === 'vi' ? 'Phụ thu ngoài giờ (10%)' : 'After-hours surcharge (10%)'}</span>
-            <span>+${afterHoursFee.toFixed(2)}</span>
+            <span>+<PriceDisplay amountVnd={afterHoursFee} /></span>
           </div>
         )}
         <div className="flex justify-between text-lg font-bold pt-2 border-t">
           <span>{t('checkout.total')}</span>
-          <span className="text-rose-500">${finalTotal.toFixed(2)}</span>
+          <span className="text-rose-500">
+            <PriceDisplay amountVnd={finalTotal} />
+          </span>
         </div>
-        {paymentInfo.method === 'payos' && (
+        {paymentInfo.method === 'payos' && locale === 'en' && (
           <p className="text-xs text-gray-500">
-            {locale === 'vi'
-              ? 'Số tiền thanh toán payOS (VND) được quy đổi khi tạo link thanh toán.'
-              : 'payOS charge in VND is calculated when the payment link is created.'}
+            payOS charges in VND; USD shown uses PAYOS_USD_TO_VND_RATE.
           </p>
         )}
         {outsideHours && (

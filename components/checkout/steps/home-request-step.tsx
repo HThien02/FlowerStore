@@ -7,6 +7,7 @@ import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { Loader2, Mail } from 'lucide-react'
+import PriceDisplay from '@/components/price-display'
 
 type Props = {
   locale: string
@@ -100,13 +101,13 @@ export default function HomeDeliveryRequestStep({ locale }: Props) {
               <span className="text-gray-600">
                 {item.productName} × {item.quantity}
               </span>
-              <span>${(item.price * item.quantity).toFixed(2)}</span>
+              <PriceDisplay amountVnd={item.price * item.quantity} />
             </div>
           ))}
         </div>
         <div className="flex justify-between mt-4 font-semibold">
           <span>{t('cart.subtotal')}</span>
-          <span>${total.toFixed(2)}</span>
+          <PriceDisplay amountVnd={total} />
         </div>
         <p className="text-xs text-gray-500 mt-2">
           {locale === 'en'

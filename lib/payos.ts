@@ -43,13 +43,4 @@ export function payosDescription(orderId: string): string {
   return `TF-${short}`.slice(0, 25)
 }
 
-/** Quy đổi USD (giá trong DB) → VND cho PayOS. */
-export function usdTotalToVnd(totalUsd: number): number {
-  const rate = Number(process.env.PAYOS_USD_TO_VND_RATE || 25000)
-  const vnd = Math.round(totalUsd * rate)
-  return Math.max(vnd, 1000)
-}
-
-export function formatVnd(amount: number): string {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
-}
+export { toPayosAmount, formatMoney } from '@/lib/pricing/currency'

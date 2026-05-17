@@ -1,11 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import {
-  generatePayosOrderCode,
-  getAppBaseUrl,
-  getPayOS,
-  payosDescription,
-  usdTotalToVnd,
-} from '@/lib/payos'
+import { generatePayosOrderCode, getAppBaseUrl, getPayOS, payosDescription } from '@/lib/payos'
+import { toPayosAmount } from '@/lib/pricing/currency'
 import { notifyOrderEvent } from '@/lib/orders/notify-order'
 
 export async function createPayosCheckoutForOrder(
@@ -25,8 +20,7 @@ export async function createPayosCheckoutForOrder(
     throw new Error('Order already paid')
   }
 
-  const totalUsd = Number(order.total)
-  const amountVnd = usdTotalToVnd(totalUsd)
+  const amountVnd = toPayosAmount(Number(order.total))
   const orderCode =
     order.payos_order_code != null ? Number(order.payos_order_code) : generatePayosOrderCode()
 

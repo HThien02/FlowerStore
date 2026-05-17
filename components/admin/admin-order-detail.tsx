@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { formatMoney } from '@/lib/pricing/currency'
 
 const STATUS_OPTIONS = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
 
@@ -254,9 +255,9 @@ export default function AdminOrderDetail({ locale, orderId }: { locale: string; 
                   <tr key={it.id} className="border-t">
                     <td className="py-2">{it.product_name}</td>
                     <td className="py-2 text-center">{it.quantity}</td>
-                    <td className="py-2 text-right">${Number(it.product_price).toFixed(2)}</td>
+                    <td className="py-2 text-right">{formatMoney(Number(it.product_price), locale)}</td>
                     <td className="py-2 text-right">
-                      ${(Number(it.product_price) * it.quantity).toFixed(2)}
+                      {formatMoney(Number(it.product_price) * it.quantity, locale)}
                     </td>
                   </tr>
                 ))}
@@ -265,15 +266,15 @@ export default function AdminOrderDetail({ locale, orderId }: { locale: string; 
             <div className="border-t mt-4 pt-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
-                <span>${Number(order.subtotal).toFixed(2)}</span>
+                <span>{formatMoney(Number(order.subtotal), locale)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Delivery</span>
-                <span>${Number(order.delivery_cost).toFixed(2)}</span>
+                <span>{formatMoney(Number(order.delivery_cost), locale)}</span>
               </div>
               <div className="flex justify-between font-semibold text-base">
                 <span>Total</span>
-                <span>${Number(order.total).toFixed(2)}</span>
+                <span>{formatMoney(Number(order.total), locale)}</span>
               </div>
             </div>
           </section>

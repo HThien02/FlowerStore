@@ -51,8 +51,8 @@ export default function PaymentStep({ locale }: Props) {
 
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
         {locale === 'vi'
-          ? 'Tỷ giá quy đổi USD → VND được cấu hình trên server (PAYOS_USD_TO_VND_RATE).'
-          : 'USD → VND conversion uses server config (PAYOS_USD_TO_VND_RATE).'}
+          ? 'Giá trong hệ thống là VND. Thanh toán payOS dùng đúng số VND trên đơn.'
+          : 'Prices are stored in VND. USD is shown using PAYOS_USD_TO_VND_RATE from .env.'}
       </div>
 
       <div className="flex justify-between">

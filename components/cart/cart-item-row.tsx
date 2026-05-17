@@ -4,6 +4,7 @@ import { useCart, CartItem } from '@/lib/cart-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { X } from 'lucide-react'
+import PriceDisplay from '@/components/price-display'
 
 type Props = {
   item: CartItem
@@ -24,7 +25,7 @@ export default function CartItemRow({ item, locale }: Props) {
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-gray-900 mb-2">{item.productName}</h3>
         <p className="text-lg font-bold text-gray-900 mb-4">
-          ${item.price.toFixed(2)} each
+          <PriceDisplay amountVnd={item.price} /> {locale === 'en' ? 'each' : '/ sp'}
         </p>
 
         {/* Quantity and Price */}
@@ -59,7 +60,7 @@ export default function CartItemRow({ item, locale }: Props) {
               {locale === 'en' ? 'Subtotal' : 'Tổng'}
             </p>
             <p className="text-lg font-bold">
-              ${(item.price * item.quantity).toFixed(2)}
+              <PriceDisplay amountVnd={item.price * item.quantity} />
             </p>
           </div>
 

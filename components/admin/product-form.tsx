@@ -214,7 +214,7 @@ export default function ProductForm({ locale, mode, productId }: Props) {
           </select>
         </div>
         <div>
-          <Label>Price (USD)</Label>
+          <Label>{locale === 'vi' ? 'Giá (VND)' : 'Price (VND)'}</Label>
           <Input
             type="number"
             step="0.01"

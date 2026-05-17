@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useCheckout } from '@/lib/checkout-context'
 import { Button } from '@/components/ui/button'
 import { Truck, Clock } from 'lucide-react'
+import PriceDisplay from '@/components/price-display'
 
 type DeliveryOption = {
   id: string
@@ -86,7 +87,7 @@ export default function DeliveryMethodStep({ deliveryOptions, locale }: Props) {
                   </div>
                   <div className="flex items-center gap-1">
                     <Truck className="w-4 h-4" />
-                    <span>${option.base_price.toFixed(2)}</span>
+                    <PriceDisplay amountVnd={option.base_price} />
                   </div>
                 </div>
               </div>

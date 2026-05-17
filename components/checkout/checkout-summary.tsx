@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart-context'
 import { useCheckout } from '@/lib/checkout-context'
+import PriceDisplay from '@/components/price-display'
 
 type Props = {
   locale: string
@@ -31,7 +32,7 @@ export default function CheckoutSummary({ locale }: Props) {
               {item.productName} × {item.quantity}
             </span>
             <span className="font-medium">
-              ${(item.price * item.quantity).toFixed(2)}
+              <PriceDisplay amountVnd={item.price * item.quantity} />
             </span>
           </div>
         ))}
@@ -41,7 +42,9 @@ export default function CheckoutSummary({ locale }: Props) {
       <div className="space-y-3 pb-4 border-b mb-4">
         <div className="flex justify-between">
           <span className="text-gray-600">{t('cart.subtotal')}</span>
-          <span className="font-medium">${subtotal.toFixed(2)}</span>
+          <span className="font-medium">
+            <PriceDisplay amountVnd={subtotal} />
+          </span>
         </div>
         {homeFlow && (
           <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2">
@@ -51,7 +54,9 @@ export default function CheckoutSummary({ locale }: Props) {
         {showDeliveryLine && (
           <div className="flex justify-between">
             <span className="text-gray-600">{t('cart.delivery')}</span>
-            <span className="font-medium">${deliveryCost.toFixed(2)}</span>
+            <span className="font-medium">
+              <PriceDisplay amountVnd={deliveryCost} />
+            </span>
           </div>
         )}
       </div>
@@ -65,7 +70,7 @@ export default function CheckoutSummary({ locale }: Props) {
               {locale === 'en' ? 'TBD after contact' : 'Liên hệ xác nhận'}
             </span>
           ) : (
-            `$${finalTotal.toFixed(2)}`
+            <PriceDisplay amountVnd={finalTotal} />
           )}
         </span>
       </div>

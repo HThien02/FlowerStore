@@ -1,5 +1,6 @@
 import { emailShell } from '../layout'
 import { escapeHtml } from '../escape-html'
+import { formatMoney } from '@/lib/pricing/currency'
 
 export type OrderEmailItem = {
   productName: string
@@ -20,8 +21,8 @@ export type OrderEmailContext = {
   locale?: 'en' | 'vi'
 }
 
-function fmtMoney(n: number) {
-  return `$${n.toFixed(2)}`
+function fmtMoney(n: number, locale: 'en' | 'vi' = 'vi') {
+  return formatMoney(n, locale)
 }
 
 function fmtDate(iso: string | null | undefined, locale: 'en' | 'vi') {
@@ -32,13 +33,13 @@ function fmtDate(iso: string | null | undefined, locale: 'en' | 'vi') {
   })
 }
 
-function itemsTable(items: OrderEmailItem[]) {
+function itemsTable(items: OrderEmailItem[], locale: 'en' | 'vi') {
   const rows = items
     .map(
       (i) =>
         `<tr>
           <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;">${escapeHtml(i.productName)} × ${i.quantity}</td>
-          <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;text-align:right;">${fmtMoney(i.price * i.quantity)}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;text-align:right;">${fmtMoney(i.price * i.quantity, locale)}</td>
         </tr>`
     )
     .join('')
@@ -68,8 +69,8 @@ function orderDetailsBody(ctx: OrderEmailContext, locale: 'en' | 'vi') {
           }${ctx.staffName ? ` · ${escapeHtml(ctx.staffName)}` : ''}</p>`
         : ''
     }
-    <div style="margin:16px 0;">${itemsTable(ctx.items)}</div>
-    <p style="margin:12px 0 0;font-size:17px;"><strong>${locale === 'vi' ? 'Tổng' : 'Total'}: ${fmtMoney(ctx.total)}</strong></p>
+    <div style="margin:16px 0;">${itemsTable(ctx.items, locale)}</div>
+    <p style="margin:12px 0 0;font-size:17px;"><strong>${locale === 'vi' ? 'Tổng' : 'Total'}: ${fmtMoney(ctx.total, locale)}</strong></p>
   `
 }
 

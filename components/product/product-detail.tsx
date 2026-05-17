@@ -11,6 +11,7 @@ import { useCart } from '@/lib/cart-context'
 import { toast } from 'sonner'
 import ProductImageGallery from '@/components/product/product-image-gallery'
 import { productImageList } from '@/lib/product-images'
+import PriceDisplay from '@/components/price-display'
 
 type Product = {
   id: string
@@ -104,7 +105,9 @@ export default function ProductDetail({ product, relatedProducts, locale }: Prop
                 )}
               </div>
 
-              <p className="text-2xl font-bold text-gray-900 mb-2">${product.price.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900 mb-2">
+                <PriceDisplay amountVnd={product.price} />
+              </p>
             </div>
 
             {/* Description */}

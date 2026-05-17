@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { formatMoney } from '@/lib/pricing/currency'
 import { adminFetch } from '@/lib/admin/use-admin-fetch'
 import { Button } from '@/components/ui/button'
 import {
@@ -147,7 +148,7 @@ export default function AdminOrdersTable({ locale }: { locale: string }) {
                     <span className="text-xs text-gray-400">{o.payment_status ?? ''}</span>
                   </td>
                   <td className="px-4 py-2 text-right font-medium">
-                    ${Number(o.total).toFixed(2)}
+                    {formatMoney(Number(o.total), locale)}
                   </td>
                   <td className="px-4 py-2 text-gray-600">{o.delivery_phone ?? '—'}</td>
                   <td className="px-4 py-2 text-right">

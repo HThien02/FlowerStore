@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { formatMoney } from '@/lib/pricing/currency'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -116,7 +117,7 @@ export default function AdminProductsTable({ locale }: { locale: string }) {
                 </td>
                 <td className="px-4 py-2 font-medium text-gray-900">{p.name}</td>
                 <td className="px-4 py-2 text-gray-600">{p.slug}</td>
-                <td className="px-4 py-2 text-right">${Number(p.price).toFixed(2)}</td>
+                <td className="px-4 py-2 text-right">{formatMoney(Number(p.price), locale)}</td>
                 <td className="px-4 py-2 text-right">{p.stock ?? 0}</td>
                 <td className="px-4 py-2 text-center">{p.featured ? '✓' : '—'}</td>
                 <td className="px-4 py-2 text-right whitespace-nowrap space-x-2">

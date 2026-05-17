@@ -8,6 +8,7 @@ import { ShoppingCart, Heart } from 'lucide-react'
 import { useState } from 'react'
 import { useCart } from '@/lib/cart-context'
 import { toast } from 'sonner'
+import PriceDisplay from '@/components/price-display'
 
 type ProductCardProps = {
   product: {
@@ -86,7 +87,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
 
         <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-primary font-display">${product.price.toFixed(2)}</span>
+          <PriceDisplay amountVnd={product.price} className="text-lg font-bold text-primary font-display" />
           <Button size="sm" className="rounded-full btn-bloom" onClick={handleAddToCart}>
             <ShoppingCart className="w-4 h-4" />
           </Button>
