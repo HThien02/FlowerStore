@@ -44,12 +44,12 @@ export function generatePayosOrderCode(): number {
 }
 
 /**
- * Nội dung chuyển khoản trên QR — phải khớp để PayOS tự đối soát.
- * TK chưa liên kết VA: tối đa 9 ký tự (theo docs payOS).
+ * Nội dung CK trên QR — PayOS dùng dạng VQRIO{orderCode} khi đối soát (xem webhook mẫu).
+ * VD orderCode 123 → description "VQRIO123".
  */
 export function payosDescription(orderCode: number): string {
-  const s = String(orderCode).replace(/\D/g, '')
-  return s.length <= 9 ? s : s.slice(-9)
+  const code = String(orderCode).replace(/\D/g, '')
+  return `VQRIO${code}`
 }
 
 export { toPayosAmount, formatMoney } from '@/lib/pricing/currency'

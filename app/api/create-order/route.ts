@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       checkoutUrl = payos.checkoutUrl
       amountVnd = payos.amountVnd
       payosOrderCode = payos.orderCode
-      payosDescriptionText = String(payos.orderCode)
+      payosDescriptionText = payos.description
     }
 
     return NextResponse.json({

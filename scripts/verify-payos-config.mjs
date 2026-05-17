@@ -14,9 +14,8 @@ if (!base || base.includes('localhost')) {
   issues.push('NEXT_PUBLIC_APP_URL phải là domain HTTPS production (không localhost)')
 }
 
-const sampleCode = Number(String(Date.now()).slice(-9))
-const desc = String(sampleCode).slice(0, 9)
-if (desc.length > 9) issues.push('payosDescription > 9 ký tự')
+const sampleCode = Number(String(Date.now()).slice(-6))
+const desc = `VQRIO${sampleCode}`
 
 if (issues.length) {
   console.error('❌ Cấu hình chưa OK:\n', issues.map((i) => `  - ${i}`).join('\n'))
