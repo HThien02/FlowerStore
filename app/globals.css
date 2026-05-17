@@ -4,20 +4,22 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --site-content-max: 80rem;
+  --site-padding-x: 1rem;
+  --background: oklch(0.99 0.01 350);
+  --foreground: oklch(0.28 0.04 350);
+  --card: oklch(1 0.008 350);
+  --card-foreground: oklch(0.28 0.04 350);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.28 0.04 350);
+  --primary: oklch(0.58 0.2 12);
+  --primary-foreground: oklch(0.99 0.01 350);
+  --secondary: oklch(0.96 0.03 350);
+  --secondary-foreground: oklch(0.35 0.06 350);
+  --muted: oklch(0.96 0.02 350);
+  --muted-foreground: oklch(0.5 0.04 350);
+  --accent: oklch(0.94 0.05 330);
+  --accent-foreground: oklch(0.4 0.1 12);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
@@ -28,7 +30,7 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
+  --radius: 1rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -75,8 +77,9 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-nunito), var(--font-geist-sans), sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -121,5 +124,54 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, oklch(0.92 0.06 350 / 0.5), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, oklch(0.95 0.05 330 / 0.35), transparent);
   }
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .site-container {
+    width: 100%;
+    max-width: var(--site-content-max);
+    margin-inline: auto;
+  }
+  .site-container-padding {
+    padding-inline: var(--site-padding-x);
+  }
+  @media (min-width: 640px) {
+    :root {
+      --site-padding-x: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    :root {
+      --site-padding-x: 2rem;
+    }
+  }
+  .floral-card {
+    @apply rounded-2xl border border-rose-100/80 bg-card/90 shadow-sm backdrop-blur-sm;
+  }
+  .btn-bloom {
+    @apply bg-primary text-primary-foreground shadow-md shadow-rose-200/60 hover:scale-[1.02] active:scale-[0.98] transition-transform;
+  }
+  .float-gentle {
+    animation: float-gentle 4s ease-in-out infinite;
+  }
+  .petal-drift {
+    animation: petal-drift 8s ease-in-out infinite;
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes petal-drift {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.6; }
+  50% { transform: translate(6px, -12px) rotate(8deg); opacity: 1; }
 }

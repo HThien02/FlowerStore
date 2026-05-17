@@ -141,7 +141,9 @@
     "forgotPassword": "Quên Mật Khẩu?",
     "noAccount": "Chưa có tài khoản?",
     "haveAccount": "Đã có tài khoản?",
-    "reset": "Đặt Lại Mật Khẩu"
+    "reset": "Đặt Lại Mật Khẩu",
+    "resetEmailSent": "Đã gửi email đặt lại mật khẩu. Kiểm tra hộp thư (cả spam).",
+    "backToLogin": "Quay lại đăng nhập"
   },
   "common": {
     "loading": "Đang Tải...",

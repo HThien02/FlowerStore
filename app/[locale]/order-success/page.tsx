@@ -24,7 +24,8 @@ function OrderSuccess({
   const isHomeRequest = variant === 'home-request'
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div className="w-full py-20">
+      <div className="max-w-2xl mx-auto">
       <div className="text-center space-y-6">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full">
           <Check className="w-10 h-10 text-green-600" />
@@ -51,10 +52,10 @@ function OrderSuccess({
         </p>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-left">
-          <h2 className="font-semibold text-blue-900 mb-3">
+          <h2 className="font-semibold text-rose-900 mb-3">
             {locale === 'en' ? 'What happens next?' : 'Tiếp theo?'}
           </h2>
-          <ul className="space-y-2 text-sm text-blue-900">
+          <ul className="space-y-2 text-sm text-rose-900/90">
             {isHomeRequest ? (
               <>
                 <li className="flex gap-2">
@@ -128,11 +129,12 @@ function OrderSuccess({
             </Button>
           </Link>
           <Link href={`/${locale}/shop`}>
-            <Button size="lg" className="bg-rose-500 hover:bg-rose-600">
+            <Button size="lg" className="rounded-full btn-bloom">
               {locale === 'en' ? 'Continue Shopping' : 'Tiếp Tục Mua Hàng'}
             </Button>
           </Link>
         </div>
+      </div>
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ export default async function AboutPage() {
   const t = await getTranslations()
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-16 space-y-6">
+    <div className="w-full py-16 space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">{t('nav.about')}</h1>
       <p className="text-gray-600 leading-relaxed">
         We are a flower shop dedicated to fresh bouquets and reliable delivery. Our team

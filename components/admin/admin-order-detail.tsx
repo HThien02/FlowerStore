@@ -23,6 +23,19 @@ type OrderItem = {
   quantity: number
 }
 
+type AssignableStaff = {
+  id: string
+  full_name: string | null
+  email: string
+  role: string
+}
+
+type Assignment = {
+  staff_id: string
+  prep_scheduled_at: string
+  user_profiles?: AssignableStaff | AssignableStaff[] | null
+}
+
 type Order = {
   id: string
   status: string
@@ -35,8 +48,18 @@ type Order = {
   delivery_phone: string | null
   delivery_notes: string | null
   user_id: string | null
+  customer_name: string | null
+  customer_email: string | null
+  fulfillment_type: string | null
+  scheduled_at: string | null
+  prep_scheduled_at: string | null
   created_at: string
   updated_at?: string | null
+}
+
+function fmtDt(iso: string | null | undefined) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString('vi-VN', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 export default function AdminOrderDetail({ locale, orderId }: { locale: string; orderId: string }) {
@@ -44,9 +67,26 @@ export default function AdminOrderDetail({ locale, orderId }: { locale: string; 
   const [items, setItems] = useState<OrderItem[]>([])
   const [loading, setLoading] = useState(true)
   const [savingStatus, setSavingStatus] = useState(false)
+  const [savingStaff, setSavingStaff] = useState(false)
   const [role, setRole] = useState<string | null>(null)
+  const [assignment, setAssignment] = useState<Assignment | null>(null)
+  const [assignableStaff, setAssignableStaff] = useState<AssignableStaff[]>([])
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('')
 
   const isAdmin = role === 'admin'
+  const isVi = locale === 'vi'
+
+  function staffLabel(p: AssignableStaff) {
+    const name = p.full_name || p.email
+    return p.role === 'admin' ? `${name} (admin)` : name
+  }
+
+  function assignmentStaffName(a: Assignment | null) {
+    if (!a) return null
+    const p = a.user_profiles
+    const profile = Array.isArray(p) ? p[0] : p
+    return profile?.full_name || profile?.email || null
+  }
 
   useEffect(() => {
     const fetchRole = async () => {
@@ -71,6 +111,10 @@ export default function AdminOrderDetail({ locale, orderId }: { locale: string; 
       if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`)
       setOrder(body.order as Order)
       setItems((body.items ?? []) as OrderItem[])
+      setAssignment((body.assignment as Assignment | null) ?? null)
+      setAssignableStaff((body.assignableStaff as AssignableStaff[]) ?? [])
+      const a = body.assignment as Assignment | null
+      setSelectedStaffId(a?.staff_id ?? '')
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed to load order')
     } finally {
@@ -81,6 +125,55 @@ export default function AdminOrderDetail({ locale, orderId }: { locale: string; 
   useEffect(() => {
     load()
   }, [orderId])
+
+  const updateStaff = async (staffId: string) => {
+    if (!order || !staffId) return
+    setSavingStaff(true)
+    try {
+      const res = await adminFetch(`/api/admin/orders/${order.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ staffId }),
+      })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`)
+      if (body.order) setOrder(body.order as Order)
+      if (body.assignment) {
+        setAssignment({
+          staff_id: body.assignment.staff_id,
+          prep_scheduled_at: body.assignment.prep_scheduled_at,
+          user_profiles: body.assignment.staff_name
+            ? { id: body.assignment.staff_id, full_name: body.assignment.staff_name, email: '', role: 'staff' }
+            : null,
+        })
+        setSelectedStaffId(body.assignment.staff_id)
+      }
+      toast.success(isVi ? 'Đã cập nhật nhân viên phụ trách' : 'Assignee updated')
+      void load()
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update assignee')
+    } finally {
+      setSavingStaff(false)
+    }
+  }
+
+  const autoAssign = async () => {
+    if (!order) return
+    setSavingStaff(true)
+    try {
+      const res = await adminFetch(`/api/admin/orders/${order.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ autoAssign: true }),
+      })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`)
+      toast.success(isVi ? 'Đã gán nhân viên tự động' : 'Auto-assigned staff')
+      void load()
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Auto-assign failed')
+    } finally {
+      setSavingStaff(false)
+    }
+  }
 
   const updateStatus = async (next: string) => {
     if (!order) return
@@ -187,6 +280,74 @@ export default function AdminOrderDetail({ locale, orderId }: { locale: string; 
         </div>
 
         <aside className="space-y-6">
+          <section className="bg-white border rounded-lg p-6 text-sm space-y-3">
+            <h2 className="font-semibold mb-2">{isVi ? 'Lịch & nhân viên' : 'Schedule & staff'}</h2>
+            <p>
+              <span className="text-gray-500">{isVi ? 'Khách:' : 'Customer:'}</span>{' '}
+              {order.customer_name || '—'}
+              {order.customer_email ? (
+                <span className="block text-xs text-gray-400">{order.customer_email}</span>
+              ) : null}
+            </p>
+            <p>
+              <span className="text-gray-500">{isVi ? 'Chuẩn bị:' : 'Prep at:'}</span>{' '}
+              <span className="text-rose-600 font-medium">{fmtDt(order.prep_scheduled_at)}</span>
+            </p>
+            <p>
+              <span className="text-gray-500">{isVi ? 'Giao/nhận:' : 'Pickup / delivery:'}</span>{' '}
+              {fmtDt(order.scheduled_at)}
+            </p>
+            <p>
+              <span className="text-gray-500">{isVi ? 'Hình thức:' : 'Type:'}</span>{' '}
+              {order.fulfillment_type ?? '—'}
+            </p>
+
+            <div className="pt-2 border-t space-y-2">
+              <p className="text-gray-500">{isVi ? 'Người phụ trách:' : 'Assigned to:'}</p>
+              {assignmentStaffName(assignment) ? (
+                <p className="font-medium text-rose-700">{assignmentStaffName(assignment)}</p>
+              ) : (
+                <p className="text-amber-600">{isVi ? 'Chưa gán' : 'Unassigned'}</p>
+              )}
+
+              {isAdmin && assignableStaff.length > 0 && (
+                <div className="space-y-2 pt-1">
+                  <Select
+                    value={selectedStaffId || undefined}
+                    onValueChange={(v) => {
+                      setSelectedStaffId(v)
+                      void updateStaff(v)
+                    }}
+                    disabled={savingStaff}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={isVi ? 'Chọn nhân viên' : 'Select staff'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assignableStaff.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {staffLabel(s)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!assignment && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      disabled={savingStaff}
+                      onClick={() => void autoAssign()}
+                    >
+                      {isVi ? 'Gán tự động' : 'Auto-assign'}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+
           <section className="bg-white border rounded-lg p-6 text-sm space-y-2">
             <h2 className="font-semibold mb-2">Delivery</h2>
             <p>

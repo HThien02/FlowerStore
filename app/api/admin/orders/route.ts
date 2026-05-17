@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     let query = guard.admin
       .from('orders')
       .select(
-        'id, status, payment_status, payment_method, subtotal, delivery_cost, total, delivery_address, delivery_phone, created_at, user_id'
+        'id, status, payment_status, payment_method, subtotal, delivery_cost, total, delivery_address, delivery_phone, created_at, user_id, customer_name, customer_email, fulfillment_type, scheduled_at, prep_scheduled_at'
       )
       .order('created_at', { ascending: false })
       .limit(limit)

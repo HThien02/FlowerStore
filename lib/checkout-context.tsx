@@ -15,6 +15,8 @@ export type DeliveryInfo = {
   postalCode: string
   country: string
   notes?: string
+  /** ISO local datetime for pickup / delivery (from datetime-local input) */
+  scheduledAt?: string
 }
 
 export type DeliveryOption = {
@@ -59,6 +61,7 @@ const defaultDeliveryInfo: DeliveryInfo = {
   state: '',
   postalCode: '',
   country: 'Vietnam',
+  scheduledAt: '',
 }
 
 const CheckoutContext = createContext<CheckoutContextType | undefined>(undefined)

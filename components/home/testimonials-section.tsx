@@ -41,7 +41,7 @@ export default function TestimonialsSection() {
 
   return (
     <div className="py-16 sm:py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full">
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
             {locale === 'en' ? 'What Our Customers Say' : 'Khách Hàng Nói Gì Về Chúng Tôi'}

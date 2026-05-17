@@ -4,7 +4,7 @@ export default async function ContactPage() {
   const t = await getTranslations()
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-16 space-y-6">
+    <div className="w-full py-16 space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">{t('nav.contact')}</h1>
       <p className="text-gray-600 leading-relaxed">
         For orders, partnerships, or questions, reach out—we typically reply within one

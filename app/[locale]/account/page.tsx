@@ -63,7 +63,7 @@ export default function AccountPage() {
 
   if (isLoading || isLoadingData) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+      <div className="w-full py-20 text-center">
         <Loader2 className="w-8 h-8 animate-spin mx-auto" />
         <p className="mt-4 text-gray-600">{t('common.loading')}</p>
       </div>
@@ -75,7 +75,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="w-full py-12">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">{t('account.title')}</h1>
         <Button

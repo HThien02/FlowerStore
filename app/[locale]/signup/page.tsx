@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { getAuthErrorMessage } from '@/lib/auth-errors'
 
 export default function SignupPage() {
   const t = useTranslations()
@@ -41,12 +42,24 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
-      await signUp(email, password, `${firstName.trim()} ${lastName.trim()}`)
-      toast.success(locale === 'en' ? 'Account created successfully!' : 'Tạo tài khoản thành công!')
+      const { needsEmailConfirmation } = await signUp(
+        email,
+        password,
+        `${firstName.trim()} ${lastName.trim()}`
+      )
+      if (needsEmailConfirmation) {
+        toast.success(
+          locale === 'en'
+            ? 'Check your email to confirm your account, then sign in.'
+            : 'Kiểm tra email để xác nhận tài khoản, sau đó đăng nhập.'
+        )
+      } else {
+        toast.success(locale === 'en' ? 'Account created successfully!' : 'Tạo tài khoản thành công!')
+      }
       router.push(`/${locale}/login`)
     } catch (error: any) {
       console.error('[v0] Signup error:', error)
-      toast.error(error.message || t('common.error'))
+      toast.error(getAuthErrorMessage(error, locale === 'vi' ? 'vi' : 'en'))
     } finally {
       setIsLoading(false)
     }

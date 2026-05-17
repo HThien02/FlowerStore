@@ -43,15 +43,15 @@ export default function Navigation() {
   }
 
   return (
-    <nav className="border-b bg-white sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="border-b border-rose-100/80 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+      <div className="site-container site-container-padding">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-rose-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">🌹</span>
+            <div className="w-9 h-9 bg-primary rounded-2xl flex items-center justify-center shadow-md shadow-rose-200/50">
+              <span className="text-lg">🌸</span>
             </div>
-            <span className="font-bold text-lg">Flower Shop</span>
+            <span className="font-bold text-lg font-display text-rose-950">TFlowers</span>
           </Link>
 
           {/* Links */}

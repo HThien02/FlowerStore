@@ -21,14 +21,14 @@ export default function CheckoutClient({ locale }: Props) {
 
   if (items.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+      <div className="w-full py-20 text-center">
         <h1 className="text-2xl font-bold mb-2">{locale === 'en' ? 'Your cart is empty' : 'Giỏ hàng của bạn trống'}</h1>
       </div>
     )
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="w-full py-12">
       <h1 className="text-3xl font-bold mb-8">{t('checkout.title')}</h1>
 
       <CheckoutProgress currentStep={currentStep} fulfillmentType={fulfillmentType} locale={locale} />

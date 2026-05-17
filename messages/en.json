@@ -141,7 +141,9 @@
     "forgotPassword": "Forgot Password?",
     "noAccount": "Don't have an account?",
     "haveAccount": "Already have an account?",
-    "reset": "Reset Password"
+    "reset": "Reset Password",
+    "resetEmailSent": "Password reset email sent. Check your inbox (and spam).",
+    "backToLogin": "Back to login"
   },
   "common": {
     "loading": "Loading...",

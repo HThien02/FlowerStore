@@ -23,7 +23,16 @@ type OrderRow = {
   total: number
   delivery_phone: string | null
   delivery_address: string | null
+  customer_name: string | null
+  scheduled_at: string | null
+  prep_scheduled_at: string | null
+  fulfillment_type: string | null
   created_at: string
+}
+
+function fmtShort(iso: string | null) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
 }
 
 const STATUS_OPTIONS = [
@@ -95,7 +104,8 @@ export default function AdminOrdersTable({ locale }: { locale: string }) {
           <thead className="bg-gray-50 text-left">
             <tr>
               <th className="px-4 py-3">Order</th>
-              <th className="px-4 py-3">Created</th>
+              <th className="px-4 py-3">Customer</th>
+              <th className="px-4 py-3">Prep / Due</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Payment</th>
               <th className="px-4 py-3 text-right">Total</th>
@@ -106,7 +116,7 @@ export default function AdminOrdersTable({ locale }: { locale: string }) {
           <tbody>
             {rows.length === 0 && !loading && (
               <tr>
-                <td colSpan={7} className="text-center text-gray-500 py-10">
+                <td colSpan={8} className="text-center text-gray-500 py-10">
                   No orders.
                 </td>
               </tr>
@@ -118,11 +128,12 @@ export default function AdminOrdersTable({ locale }: { locale: string }) {
                   <td className="px-4 py-2 font-mono text-xs text-gray-700">
                     {o.id.slice(0, 8)}…
                   </td>
-                  <td className="px-4 py-2 text-gray-600">
-                    {created.toLocaleDateString()}{' '}
-                    <span className="text-xs text-gray-400">
-                      {created.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                  <td className="px-4 py-2 text-gray-700 max-w-[140px] truncate">
+                    {o.customer_name ?? '—'}
+                  </td>
+                  <td className="px-4 py-2 text-xs text-gray-600">
+                    <span className="text-rose-600 block">⏱ {fmtShort(o.prep_scheduled_at)}</span>
+                    <span className="text-gray-500">→ {fmtShort(o.scheduled_at)}</span>
                   </td>
                   <td className="px-4 py-2">
                     <span

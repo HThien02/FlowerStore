@@ -58,6 +58,19 @@ export default function DeliveryStep({ locale }: Props) {
       if (!deliveryInfo.city.trim()) newErrors.city = locale === 'en' ? 'Required' : 'Bắt buộc'
     }
 
+    if (!deliveryInfo.scheduledAt?.trim()) {
+      newErrors.scheduledAt =
+        locale === 'en' ? 'Please choose date & time' : 'Vui lòng chọn ngày giờ nhận/giao hoa'
+    } else {
+      const when = new Date(deliveryInfo.scheduledAt)
+      if (when.getTime() < Date.now() + 60 * 60 * 1000) {
+        newErrors.scheduledAt =
+          locale === 'en'
+            ? 'Please schedule at least 1 hour from now'
+            : 'Vui lòng chọn thời gian sau ít nhất 1 giờ'
+      }
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -82,9 +95,15 @@ export default function DeliveryStep({ locale }: Props) {
 
   const isHome = fulfillmentType === 'home'
 
+  const minSchedule = () => {
+    const d = new Date(Date.now() + 60 * 60 * 1000)
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+    return d.toISOString().slice(0, 16)
+  }
+
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-      <h2 className="text-xl font-bold">{t('checkout.step1Title')}</h2>
+    <div className="floral-card p-6 space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
+      <h2 className="text-xl font-bold font-display text-rose-900">{t('checkout.step1Title')}</h2>
 
       <div className="space-y-3">
         <Label className="text-base font-semibold">{t('checkout.fulfillmentQuestion')}</Label>
@@ -257,6 +276,26 @@ export default function DeliveryStep({ locale }: Props) {
         </div>
       )}
 
+      <div className="border-t pt-6 space-y-2">
+        <Label htmlFor="scheduledAt" className="text-base font-semibold">
+          {locale === 'en' ? 'When do you need the flowers?' : 'Bạn cần hoa lúc nào?'}
+        </Label>
+        <Input
+          id="scheduledAt"
+          type="datetime-local"
+          min={minSchedule()}
+          value={deliveryInfo.scheduledAt ?? ''}
+          onChange={(e) => setDeliveryInfo({ scheduledAt: e.target.value })}
+          className={errors.scheduledAt ? 'border-red-500' : ''}
+        />
+        {errors.scheduledAt && <p className="text-sm text-red-500">{errors.scheduledAt}</p>}
+        <p className="text-xs text-muted-foreground">
+          {locale === 'en'
+            ? 'We prepare bouquets 1 hour before your time; the shop will confirm by email. Standard hours 8am–6pm. Outside hours: +10% order value.'
+            : 'Shop chuẩn bị trước 1 giờ; bạn sẽ nhận email xác nhận. Giờ chuẩn 8h–18h. Ngoài giờ: +10% giá trị đơn.'}
+        </p>
+      </div>
+
       {fulfillmentType === 'pickup' && (
         <div className="border-t pt-4">
           <Label htmlFor="notes-pickup">{t('checkout.notes')}</Label>
@@ -272,7 +311,7 @@ export default function DeliveryStep({ locale }: Props) {
       )}
 
       <div className="flex justify-end">
-        <Button size="lg" className="bg-rose-500 hover:bg-rose-600" onClick={handleNext}>
+        <Button size="lg" className="rounded-full btn-bloom" onClick={handleNext}>
           {t('checkout.continue')}
         </Button>
       </div>

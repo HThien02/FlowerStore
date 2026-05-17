@@ -172,10 +172,10 @@ export default function AdminGuard({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="border-b bg-white">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+    <div className="min-h-dvh flex flex-col bg-gray-50 w-full min-w-0">
+      <header className="border-b bg-white shrink-0 sticky top-0 z-40">
+        <div className="site-container site-container-padding py-3 flex flex-wrap items-center justify-between gap-3 min-w-0">
+          <div className="flex flex-wrap items-center gap-4 md:gap-6 min-w-0">
             <Link href={`/${locale}/admin`} className="font-semibold flex items-center gap-2">
               Admin
               <span
@@ -186,10 +186,18 @@ export default function AdminGuard({
                 {state.role}
               </span>
             </Link>
-            <nav className="flex gap-4 text-sm text-gray-600">
+            <nav className="flex flex-wrap gap-3 md:gap-4 text-sm text-gray-600">
               <Link href={`/${locale}/admin/orders`} className="hover:text-rose-500">
                 Orders
               </Link>
+              <Link href={`/${locale}/admin/schedule`} className="hover:text-rose-500">
+                Schedule
+              </Link>
+              {state.role === 'admin' && (
+                <Link href={`/${locale}/admin/shifts`} className="hover:text-rose-500">
+                  Shifts
+                </Link>
+              )}
               {state.role === 'admin' && (
                 <>
                   <Link href={`/${locale}/admin/products`} className="hover:text-rose-500">
@@ -202,9 +210,10 @@ export default function AdminGuard({
               )}
             </nav>
           </div>
-          <div className="text-xs text-gray-500 flex items-center gap-3">
-            <span>{state.email}</span>
+          <div className="text-xs text-gray-500 flex items-center gap-3 shrink-0">
+            <span className="max-w-[180px] truncate">{state.email}</span>
             <button
+              type="button"
               onClick={async () => {
                 await supabase.auth.signOut()
                 router.push(`/${locale}`)
@@ -215,8 +224,10 @@ export default function AdminGuard({
             </button>
           </div>
         </div>
+      </header>
+      <div className="site-container site-container-padding py-6 md:py-8 flex-1 min-w-0 w-full overflow-x-auto">
+        {children}
       </div>
-      <div className="max-w-6xl mx-auto px-4 py-8">{children}</div>
     </div>
   )
 }

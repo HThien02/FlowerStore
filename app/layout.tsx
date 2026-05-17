@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist, Geist_Mono, Nunito } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import { CartProvider } from '@/lib/cart-context'
 import { AuthProvider } from '@/lib/auth-context'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
+const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
+const nunito = Nunito({ subsets: ['latin', 'vietnamese'], variable: '--font-nunito', weight: ['600', '700', '800'] })
 
 export const metadata: Metadata = {
   title: 'Flower Shop - Fresh Flowers Delivered',
@@ -38,8 +39,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
-      <body className="font-sans antialiased">
+    <html lang="en" className={`bg-background ${geistSans.variable} ${geistMono.variable} ${nunito.variable}`}>
+      <body className="font-sans antialiased min-h-screen">
         <AuthProvider>
           <CartProvider>
             {children}

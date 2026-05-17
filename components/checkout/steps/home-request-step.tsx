@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useCheckout } from '@/lib/checkout-context'
 import { useCart } from '@/lib/cart-context'
+import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { Loader2, Mail } from 'lucide-react'
 
@@ -15,6 +16,7 @@ export default function HomeDeliveryRequestStep({ locale }: Props) {
   const t = useTranslations()
   const { deliveryInfo, setCurrentStep } = useCheckout()
   const { items, total, clearCart } = useCart()
+  const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,6 +29,10 @@ export default function HomeDeliveryRequestStep({ locale }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           locale,
+          userId: user?.id ?? null,
+          scheduledAt: deliveryInfo.scheduledAt
+            ? new Date(deliveryInfo.scheduledAt).toISOString()
+            : undefined,
           deliveryInfo,
           items: items.map((i) => ({
             productId: i.productId,

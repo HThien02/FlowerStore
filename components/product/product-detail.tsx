@@ -54,7 +54,7 @@ export default function ProductDetail({ product, relatedProducts, locale }: Prop
 
   return (
     <div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="w-full py-12">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-8 text-sm text-gray-600">
           <Link href={`/${locale}`} className="hover:text-rose-500">
