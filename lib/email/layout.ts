@@ -35,8 +35,8 @@ export function emailShell({
       <td align="center">
         <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);">
           <tr>
-            <td style="background:#e11d48;padding:20px 24px;text-align:center;">
-              <span style="font-size:20px;color:#fff;font-weight:700;">${escapeHtml(brandName)}</span>
+            <td style="background:linear-gradient(135deg, #e75480 0%, #f0689e 100%);padding:20px 24px;text-align:center;">
+              <span style="font-size:20px;color:#fff;font-weight:700;">🌸 ${escapeHtml(brandName)}</span>
             </td>
           </tr>
           <tr>
@@ -56,4 +56,16 @@ export function emailShell({
   </table>
 </body>
 </html>`
+}
+
+/**
+ * Helper function to wrap content in email layout
+ */
+export function getEmailLayout(content: string, recipientName: string = 'Customer'): string {
+  return emailShell({
+    title: 'Flower Store Notification',
+    bodyHtml: content,
+    brandName: 'Flower Store',
+    preheader: `Hello ${recipientName}`,
+  })
 }

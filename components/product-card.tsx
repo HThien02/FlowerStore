@@ -37,61 +37,71 @@ export default function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition group">
-      {/* Image */}
-      <Link href={`/${locale}/shop/${product.slug}`}>
-        <div className="relative h-48 bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center overflow-hidden cursor-pointer">
-          <span className="text-6xl group-hover:scale-110 transition">🌹</span>
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              setIsWishlisted(!isWishlisted)
-            }}
-            className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-sm hover:shadow-md transition"
-          >
-            <Heart
-              className={`w-5 h-5 transition ${
-                isWishlisted ? 'fill-rose-500 text-rose-500' : 'text-gray-400'
-              }`}
-            />
-          </button>
-        </div>
-      </Link>
-
-      {/* Content */}
-      <div className="p-4">
+    <div className="group relative">
+      <div className="bg-card rounded-2xl overflow-hidden border-2 border-border hover:border-primary/50 shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-2">
+        {/* Image */}
         <Link href={`/${locale}/shop/${product.slug}`}>
-          <h3 className="font-semibold text-gray-900 hover:text-rose-500 transition line-clamp-2 mb-2">
-            {product.name}
-          </h3>
+          <div className="relative h-56 bg-gradient-to-br from-muted via-accent/10 to-primary/5 flex items-center justify-center overflow-hidden cursor-pointer">
+            <span className="text-7xl group-hover:scale-125 transition-transform duration-300 drop-shadow-lg">🌹</span>
+            
+            {/* Wishlist Button */}
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                setIsWishlisted(!isWishlisted)
+                toast.success(
+                  isWishlisted
+                    ? locale === 'en' ? 'Removed from wishlist' : 'Xoá khỏi danh sách yêu thích'
+                    : locale === 'en' ? 'Added to wishlist' : 'Thêm vào danh sách yêu thích'
+                )
+              }}
+              className="absolute top-4 right-4 p-3 bg-white rounded-full shadow-md hover:shadow-lg hover:scale-110 transition-all duration-200"
+            >
+              <Heart
+                className={`w-6 h-6 transition-colors ${
+                  isWishlisted ? 'fill-primary text-primary' : 'text-foreground/40'
+                }`}
+              />
+            </button>
+          </div>
         </Link>
 
-        {/* Rating */}
-        {product.rating > 0 && (
-          <div className="flex items-center gap-1 mb-3">
-            <div className="flex gap-0.5">
-              {Array.from({ length: Math.round(product.rating) }).map((_, i) => (
-                <span key={i} className="text-yellow-400">
-                  ★
-                </span>
-              ))}
-            </div>
-            <span className="text-sm text-gray-500">({product.reviews_count})</span>
-          </div>
-        )}
+        {/* Content */}
+        <div className="p-5 space-y-3">
+          <Link href={`/${locale}/shop/${product.slug}`}>
+            <h3 className="font-bold text-foreground hover:text-primary transition-colors line-clamp-2 mb-1 text-base">
+              {product.name}
+            </h3>
+          </Link>
 
-        {/* Price and Button */}
-        <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-gray-900">
-            ${product.price.toFixed(2)}
-          </span>
-          <Button
-            size="sm"
-            className="bg-rose-500 hover:bg-rose-600"
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart className="w-4 h-4" />
-          </Button>
+          {/* Rating */}
+          {product.rating > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} className={`text-lg ${i < Math.round(product.rating) ? 'text-accent' : 'text-muted-foreground/30'}`}>
+                    ★
+                  </span>
+                ))}
+              </div>
+              <span className="text-xs text-muted-foreground font-medium">({product.reviews_count})</span>
+            </div>
+          )}
+
+          {/* Price and Button */}
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              ${product.price.toFixed(2)}
+            </span>
+            <Button
+              size="sm"
+              className="bg-primary hover:bg-secondary text-primary-foreground font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+              onClick={handleAddToCart}
+            >
+              <ShoppingCart className="w-4 h-4 mr-1" />
+              {locale === 'en' ? 'Add' : 'Thêm'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

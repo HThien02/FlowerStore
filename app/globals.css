@@ -4,39 +4,40 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Colorful & Playful Flower Shop Theme */
+  --background: #fdf9f5;
+  --foreground: #2d2d2d;
+  --card: #ffffff;
+  --card-foreground: #2d2d2d;
+  --popover: #ffffff;
+  --popover-foreground: #2d2d2d;
+  --primary: #e75480;
+  --primary-foreground: #ffffff;
+  --secondary: #f0689e;
+  --secondary-foreground: #ffffff;
+  --muted: #f5e6ea;
+  --muted-foreground: #7a7a7a;
+  --accent: #6dd5ed;
+  --accent-foreground: #2d2d2d;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e8d5db;
+  --input: #f5e6ea;
+  --ring: #e75480;
+  --chart-1: #e75480;
+  --chart-2: #f0689e;
+  --chart-3: #6dd5ed;
+  --chart-4: #ffd89b;
+  --chart-5: #a78bfa;
+  --radius: 0.875rem;
+  --sidebar: #fdf9f5;
+  --sidebar-foreground: #2d2d2d;
+  --sidebar-primary: #e75480;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #6dd5ed;
+  --sidebar-accent-foreground: #2d2d2d;
+  --sidebar-border: #e8d5db;
+  --sidebar-ring: #e75480;
 }
 
 .dark {
@@ -121,5 +122,71 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(231, 84, 128, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(231, 84, 128, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@layer utilities {
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .bounce-in-animation {
+    animation: bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  .pulse-glow-animation {
+    animation: pulse-glow 2s infinite;
+  }
+  
+  .shimmer-animation {
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  
+  .animation-delay-4000 {
+    animation-delay: 4s;
   }
 }
