@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
+import ProductImageSlots from '@/components/admin/product-image-slots'
+import { splitProductImages, toImageSlots } from '@/lib/product-images'
 
 type Category = { id: string; name: string }
 
@@ -62,8 +64,10 @@ export default function ProductForm({ locale, mode, productId }: Props) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(mode === 'edit')
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const fileInput = useRef<HTMLInputElement | null>(null)
+  const [imageSlots, setImageSlots] = useState<string[]>(() =>
+    Array.from({ length: 5 }, () => '')
+  )
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
 
   useEffect(() => {
     const run = async () => {
@@ -94,6 +98,12 @@ export default function ProductForm({ locale, mode, productId }: Props) {
           featured: Boolean(r.featured),
           image_url: String(r.image_url ?? ''),
         })
+        setImageSlots(
+          toImageSlots(
+            String(r.image_url ?? ''),
+            (r.images_urls as string[] | null) ?? null
+          )
+        )
         setLoading(false)
       }
     }
@@ -103,34 +113,43 @@ export default function ProductForm({ locale, mode, productId }: Props) {
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
-  const handleUpload = async (file: File) => {
-    setUploading(true)
+  const handleUpload = async (file: File, index: number) => {
+    setUploadingIndex(index)
     try {
       const fd = new FormData()
       fd.append('file', file)
       const res = await adminFetch('/api/admin/upload', { method: 'POST', body: fd })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`)
-      update('image_url', String(body.url))
+      const url = String(body.url)
+      setImageSlots((prev) => {
+        const next = [...prev]
+        while (next.length < 5) next.push('')
+        next[index] = url
+        return next
+      })
+      if (index === 0) update('image_url', url)
       toast.success('Image uploaded')
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Upload failed')
     } finally {
-      setUploading(false)
-      if (fileInput.current) fileInput.current.value = ''
+      setUploadingIndex(null)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name || !form.slug || !form.price || !form.image_url || !form.category_id) {
-      toast.error('Please fill name, slug, price, category and upload an image.')
+    const { image_url, images_urls } = splitProductImages(imageSlots)
+    if (!form.name || !form.slug || !form.price || !image_url || !form.category_id) {
+      toast.error('Please fill name, slug, price, category and upload a main image.')
       return
     }
     setSaving(true)
     try {
       const payload = {
         ...form,
+        image_url,
+        images_urls,
         price: Number(form.price),
         stock: Number(form.stock),
       }
@@ -235,38 +254,18 @@ export default function ProductForm({ locale, mode, productId }: Props) {
       </div>
 
       <div>
-        <Label>Image</Label>
-        <div className="mt-2 flex items-start gap-4">
-          <div className="w-32 h-32 rounded-md border bg-gray-50 flex items-center justify-center overflow-hidden">
-            {form.image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={form.image_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-xs text-gray-400">No image</span>
-            )}
-          </div>
-          <div className="flex-1 space-y-2">
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) handleUpload(f)
-              }}
-              disabled={uploading}
-              className="block w-full text-sm"
-            />
-            <p className="text-xs text-gray-500">
-              PNG/JPG/WebP/GIF · max 5 MB · stored in Supabase Storage bucket{' '}
-              <code>product-images</code>.
-            </p>
-            <Input
-              placeholder="…or paste an image URL"
-              value={form.image_url}
-              onChange={(e) => update('image_url', e.target.value)}
-            />
-          </div>
+        <Label>{locale === 'vi' ? 'Hình ảnh (tối đa 5)' : 'Images (up to 5)'}</Label>
+        <div className="mt-2">
+          <ProductImageSlots
+            slots={imageSlots}
+            onChange={(slots) => {
+              setImageSlots(slots)
+              update('image_url', slots[0] ?? '')
+            }}
+            onUpload={handleUpload}
+            uploadingIndex={uploadingIndex}
+            isVi={locale === 'vi'}
+          />
         </div>
       </div>
 
@@ -287,7 +286,7 @@ export default function ProductForm({ locale, mode, productId }: Props) {
             Cancel
           </Button>
         </Link>
-        <Button type="submit" disabled={saving || uploading}>
+        <Button type="submit" disabled={saving || uploadingIndex !== null}>
           {saving ? 'Saving…' : mode === 'create' ? 'Create product' : 'Save changes'}
         </Button>
       </div>

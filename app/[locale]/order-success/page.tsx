@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check } from 'lucide-react'
+import OrderSuccessPayosStatus from '@/components/order/order-success-payos-status'
 
 type Props = {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ orderId?: string; type?: string }>
+  searchParams: Promise<{ orderId?: string; type?: string; payos?: string }>
 }
 
 export async function generateMetadata({ params }: Props) {
@@ -17,9 +18,13 @@ export async function generateMetadata({ params }: Props) {
 function OrderSuccess({
   locale,
   variant,
+  orderId,
+  payosReturn,
 }: {
   locale: string
   variant: 'default' | 'home-request'
+  orderId?: string
+  payosReturn?: boolean
 }) {
   const isHomeRequest = variant === 'home-request'
 
@@ -46,10 +51,18 @@ function OrderSuccess({
             ? locale === 'en'
               ? 'Check your inbox for a confirmation email. Our staff will contact you within 1 hour to confirm address and pricing.'
               : 'Kiểm tra email xác nhận. Nhân viên sẽ liên hệ trong 1 giờ để xác nhận địa chỉ và giá.'
-            : locale === 'en'
-              ? 'Thank you for your order. We will process it shortly and you will receive a confirmation email.'
-              : 'Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ xử lý nó ngay và bạn sẽ nhận được email xác nhận.'}
+            : payosReturn
+              ? locale === 'en'
+                ? 'Thank you! We are confirming your payOS payment.'
+                : 'Cảm ơn bạn! Chúng tôi đang xác nhận thanh toán payOS.'
+              : locale === 'en'
+                ? 'Thank you for your order. We will process it shortly and you will receive a confirmation email.'
+                : 'Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ xử lý nó ngay và bạn sẽ nhận được email xác nhận.'}
         </p>
+
+        {payosReturn && orderId && (
+          <OrderSuccessPayosStatus orderId={orderId} locale={locale} />
+        )}
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-left">
           <h2 className="font-semibold text-rose-900 mb-3">
@@ -144,6 +157,15 @@ export default async function OrderSuccessPage({ params, searchParams }: Props) 
   const { locale } = await params
   const sp = await searchParams
   const variant = sp?.type === 'home-request' ? 'home-request' : 'default'
+  const orderId = sp?.orderId
+  const payosReturn = sp?.payos === '1'
 
-  return <OrderSuccess locale={locale} variant={variant} />
+  return (
+    <OrderSuccess
+      locale={locale}
+      variant={variant}
+      orderId={orderId}
+      payosReturn={payosReturn}
+    />
+  )
 }

@@ -72,7 +72,7 @@ export default function ReviewStep({ locale }: Props) {
           deliveryAddress: address,
           deliveryPhone: deliveryInfo.phone,
           deliveryNotes: deliveryInfo.notes,
-          paymentMethod: paymentInfo.method,
+          paymentMethod: paymentInfo.method === 'payos' ? 'payos' : paymentInfo.method,
           fulfillmentType: fulfillmentType ?? 'pickup',
           scheduledAt,
           locale,
@@ -84,8 +84,16 @@ export default function ReviewStep({ locale }: Props) {
         throw new Error(data.error || 'Order failed')
       }
 
+      const data = await res.json()
       clearCart()
-      window.location.href = `/${locale}/order-success?type=pickup`
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl as string
+        return
+      }
+
+      const qs = data.orderId ? `?orderId=${data.orderId}` : '?type=pickup'
+      window.location.href = `/${locale}/order-success${qs}`
     } catch (e) {
       console.error('[review-step]', e)
       setError(
@@ -156,6 +164,13 @@ export default function ReviewStep({ locale }: Props) {
           <span>{t('checkout.total')}</span>
           <span className="text-rose-500">${finalTotal.toFixed(2)}</span>
         </div>
+        {paymentInfo.method === 'payos' && (
+          <p className="text-xs text-gray-500">
+            {locale === 'vi'
+              ? 'Số tiền thanh toán payOS (VND) được quy đổi khi tạo link thanh toán.'
+              : 'payOS charge in VND is calculated when the payment link is created.'}
+          </p>
+        )}
         {outsideHours && (
           <p className="text-xs text-amber-600">
             {locale === 'vi'

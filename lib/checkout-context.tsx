@@ -28,7 +28,7 @@ export type DeliveryOption = {
 }
 
 export type PaymentInfo = {
-  method: 'card' | 'bank_transfer' | 'momo'
+  method: 'payos' | 'card' | 'bank_transfer' | 'momo'
 }
 
 /** Store pickup vs home delivery — drives payment step & address fields. */
@@ -71,7 +71,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType | null>(null)
   const [deliveryInfo, setDeliveryInfoState] = useState<DeliveryInfo>(defaultDeliveryInfo)
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption | undefined>()
-  const [paymentInfo, setPaymentInfoState] = useState<PaymentInfo>({ method: 'card' })
+  const [paymentInfo, setPaymentInfoState] = useState<PaymentInfo>({ method: 'payos' })
   const [deliveryCost, setDeliveryCost] = useState(0)
 
   const setDeliveryInfo = (info: Partial<DeliveryInfo>) => {
@@ -87,7 +87,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     setFulfillmentType(null)
     setDeliveryInfoState(defaultDeliveryInfo)
     setSelectedDelivery(undefined)
-    setPaymentInfoState({ method: 'card' })
+    setPaymentInfoState({ method: 'payos' })
     setDeliveryCost(0)
   }
 

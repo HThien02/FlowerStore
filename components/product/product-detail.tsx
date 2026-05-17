@@ -9,6 +9,8 @@ import ProductCard from '@/components/product-card'
 import { ShoppingCart, Heart, Share2, Star, Truck, RotateCcw } from 'lucide-react'
 import { useCart } from '@/lib/cart-context'
 import { toast } from 'sonner'
+import ProductImageGallery from '@/components/product/product-image-gallery'
+import { productImageList } from '@/lib/product-images'
 
 type Product = {
   id: string
@@ -52,6 +54,8 @@ export default function ProductDetail({ product, relatedProducts, locale }: Prop
     // TODO: Implement share
   }
 
+  const galleryImages = productImageList(product.image_url, product.images_urls)
+
   return (
     <div>
       <div className="w-full py-12">
@@ -70,23 +74,11 @@ export default function ProductDetail({ product, relatedProducts, locale }: Prop
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
           {/* Images */}
-          <div>
-            <div className="bg-gradient-to-br from-rose-100 to-pink-100 rounded-lg overflow-hidden h-96 flex items-center justify-center mb-4">
-              <span className="text-8xl">🌹</span>
-            </div>
-            {product.images_urls && product.images_urls.length > 0 && (
-              <div className="grid grid-cols-4 gap-2">
-                {product.images_urls.slice(0, 4).map((img, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-gradient-to-br from-rose-100 to-pink-100 rounded h-20 flex items-center justify-center cursor-pointer hover:opacity-80 transition"
-                  >
-                    <span className="text-4xl">🌹</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ProductImageGallery
+            images={galleryImages}
+            alt={product.name}
+            priority
+          />
 
           {/* Info */}
           <div className="space-y-6">
