@@ -43,6 +43,29 @@ export default function VietnamAddressFields({
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quote, setQuote] = useState<ShippingQuoteResult | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
+  const lastQuotedKeyRef = useRef<string | null>(null)
+  const inFlightKeyRef = useRef<string | null>(null)
+  const onQuoteRef = useRef(onQuote)
+  onQuoteRef.current = onQuote
+
+  const buildQuoteKey = (info: DeliveryInfo): string | null => {
+    const street = info.address.trim()
+    if (!street || !info.provinceCode || !info.districtCode || !info.wardCode) {
+      return null
+    }
+    return [
+      info.provinceCode,
+      info.districtCode,
+      info.wardCode,
+      street,
+      info.provinceName ?? '',
+      info.districtName ?? '',
+      info.wardName ?? '',
+    ].join('|')
+  }
+
+  const quoteKey = buildQuoteKey(deliveryInfo)
 
   useEffect(() => {
     fetch('/api/vietnam-address/provinces')
@@ -78,7 +101,14 @@ export default function VietnamAddressFields({
       .finally(() => setLoadingWards(false))
   }, [deliveryInfo.districtCode])
 
-  const fetchQuote = useCallback(async () => {
+  const fetchQuoteForKey = useCallback(async (key: string, info: DeliveryInfo) => {
+    if (key === lastQuotedKeyRef.current || key === inFlightKeyRef.current) return
+
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+    inFlightKeyRef.current = key
+
     const {
       address,
       provinceCode,
@@ -87,20 +117,15 @@ export default function VietnamAddressFields({
       districtName,
       wardCode,
       wardName,
-    } = deliveryInfo
-
-    if (!address.trim() || !provinceCode || !districtCode || !wardCode) {
-      setQuote(null)
-      onQuote(null, false)
-      return
-    }
+    } = info
 
     setQuoteLoading(true)
-    onQuote(null, true)
+    onQuoteRef.current(null, true)
     try {
       const res = await fetch('/api/shipping/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           addressDetail: address,
           provinceCode,
@@ -111,33 +136,57 @@ export default function VietnamAddressFields({
           wardName,
         }),
       })
+      if (controller.signal.aborted) return
+
       const data = await res.json()
       const q = data.quote as ShippingQuoteResult
+      lastQuotedKeyRef.current = key
       setQuote(q)
-      onQuote(q, false)
-    } catch {
+      onQuoteRef.current(q, false)
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return
       setQuote(null)
-      onQuote(null, false)
+      onQuoteRef.current(null, false)
     } finally {
-      setQuoteLoading(false)
+      if (inFlightKeyRef.current === key) inFlightKeyRef.current = null
+      if (!controller.signal.aborted) {
+        setQuoteLoading(false)
+      }
     }
-  }, [deliveryInfo, onQuote])
+  }, [])
+
+  const scheduleQuote = useCallback(
+    (delayMs: number) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (!quoteKey) {
+        lastQuotedKeyRef.current = null
+        abortRef.current?.abort()
+        setQuote(null)
+        onQuoteRef.current(null, false)
+        setQuoteLoading(false)
+        return
+      }
+      if (quoteKey === lastQuotedKeyRef.current) return
+
+      debounceRef.current = setTimeout(() => {
+        void fetchQuoteForKey(quoteKey, deliveryInfo)
+      }, delayMs)
+    },
+    [quoteKey, deliveryInfo, fetchQuoteForKey]
+  )
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      void fetchQuote()
-    }, 600)
+    scheduleQuote(700)
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [
-    deliveryInfo.address,
-    deliveryInfo.provinceCode,
-    deliveryInfo.districtCode,
-    deliveryInfo.wardCode,
-    fetchQuote,
-  ])
+  }, [quoteKey, scheduleQuote])
+
+  const flushQuote = () => {
+    if (!quoteKey || quoteKey === lastQuotedKeyRef.current) return
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    void fetchQuoteForKey(quoteKey, deliveryInfo)
+  }
 
   const selectProvince = (code: string) => {
     const p = provinces.find((x) => String(x.code) === code)
@@ -245,6 +294,7 @@ export default function VietnamAddressFields({
           id="street"
           value={deliveryInfo.address}
           onChange={(e) => onChange({ address: e.target.value })}
+          onBlur={flushQuote}
           placeholder={vi ? 'VD: 123 Nguyễn Huệ' : 'e.g. 123 Nguyen Hue St'}
           className={errors.address ? 'border-red-500' : ''}
         />

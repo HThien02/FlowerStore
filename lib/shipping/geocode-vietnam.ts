@@ -12,8 +12,16 @@ export type VietnamGeocodeResult = {
 const GOONG_V2 = 'https://rsapi.goong.io/v2/geocode'
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search'
 
+export type BuildGeocodeQueriesOptions = {
+  /** When street is required, only try full street-level queries (saves API calls). */
+  streetLevelOnly?: boolean
+}
+
 /** Goong-style: street, ward, district, city */
-export function buildGeocodeQueries(parts: VietnamAddressParts): string[] {
+export function buildGeocodeQueries(
+  parts: VietnamAddressParts,
+  options: BuildGeocodeQueriesOptions = {}
+): string[] {
   const street = parts.addressDetail.trim()
   const ward = parts.wardName.trim()
   const district = parts.districtName.trim()
@@ -21,14 +29,18 @@ export function buildGeocodeQueries(parts: VietnamAddressParts): string[] {
 
   const queries: string[] = []
   if (street) {
-    queries.push([street, ward, district, province].filter(Boolean).join(', '))
     queries.push([street, ward, district, province, 'Việt Nam'].filter(Boolean).join(', '))
+    if (!options.streetLevelOnly) {
+      queries.push([street, ward, district, province].filter(Boolean).join(', '))
+    }
   }
-  if (ward) {
-    queries.push([ward, district, province, 'Việt Nam'].filter(Boolean).join(', '))
-  }
-  if (district) {
-    queries.push([district, province, 'Việt Nam'].filter(Boolean).join(', '))
+  if (!options.streetLevelOnly) {
+    if (ward) {
+      queries.push([ward, district, province, 'Việt Nam'].filter(Boolean).join(', '))
+    }
+    if (district) {
+      queries.push([district, province, 'Việt Nam'].filter(Boolean).join(', '))
+    }
   }
   return [...new Set(queries.map((q) => q.trim()).filter(Boolean))]
 }
@@ -169,6 +181,47 @@ export type GeocodeVietnamOptions = {
   requireStreetLevel?: boolean
 }
 
+const geocodeCache = new Map<string, { at: number; result: VietnamGeocodeResult | null }>()
+const GEOCODE_CACHE_TTL_MS = 5 * 60 * 1000
+
+function cacheKey(parts: VietnamAddressParts, minPrecision: GeocodePrecision): string {
+  return [
+    parts.addressDetail.trim(),
+    parts.wardCode,
+    parts.districtCode,
+    parts.provinceCode,
+    minPrecision,
+  ].join('|')
+}
+
+function acceptResult(
+  result: VietnamGeocodeResult,
+  parts: VietnamAddressParts,
+  minPrecision: GeocodePrecision,
+  hasStreet: boolean
+): boolean {
+  if (isPreciseEnough(result.precision, parts, minPrecision)) return true
+  return !hasStreet && isPreciseEnough(result.precision, parts, 'ward')
+}
+
+async function geocodeQuery(
+  q: string,
+  goongKey: string | undefined,
+  parts: VietnamAddressParts,
+  minPrecision: GeocodePrecision,
+  hasStreet: boolean
+): Promise<VietnamGeocodeResult | null> {
+  if (goongKey) {
+    const g = await geocodeGoongV2(q, goongKey)
+    if (g && acceptResult(g, parts, minPrecision, hasStreet)) return g
+  }
+
+  const n = await geocodeNominatimQuery(q)
+  if (n && acceptResult(n, parts, minPrecision, hasStreet)) return n
+
+  return null
+}
+
 /**
  * Geocode Vietnamese structured address. Prefers Goong v2, then Nominatim.
  * Does not return coarse province/district pins when a street was provided.
@@ -180,23 +233,25 @@ export async function geocodeVietnamParts(
   const hasStreet = Boolean(parts.addressDetail.trim())
   const minPrecision: GeocodePrecision = options.requireStreetLevel || hasStreet ? 'street' : 'ward'
 
-  const queries = buildGeocodeQueries(parts)
+  const key = cacheKey(parts, minPrecision)
+  const cached = geocodeCache.get(key)
+  if (cached && Date.now() - cached.at < GEOCODE_CACHE_TTL_MS) {
+    return cached.result
+  }
+
+  const streetLevelOnly = minPrecision === 'street' && hasStreet
+  const queries = buildGeocodeQueries(parts, { streetLevelOnly })
   const goongKey = process.env.GOONG_API_KEY?.trim()
 
+  let result: VietnamGeocodeResult | null = null
   for (let i = 0; i < queries.length; i++) {
     const q = queries[i]
     if (i > 0) await new Promise((r) => setTimeout(r, 1100))
 
-    if (goongKey) {
-      const g = await geocodeGoongV2(q, goongKey)
-      if (g && isPreciseEnough(g.precision, parts, minPrecision)) return g
-      if (g && !hasStreet && isPreciseEnough(g.precision, parts, 'ward')) return g
-    }
-
-    const n = await geocodeNominatimQuery(q)
-    if (n && isPreciseEnough(n.precision, parts, minPrecision)) return n
-    if (n && !hasStreet && isPreciseEnough(n.precision, parts, 'ward')) return n
+    result = await geocodeQuery(q, goongKey, parts, minPrecision, hasStreet)
+    if (result) break
   }
 
-  return null
+  geocodeCache.set(key, { at: Date.now(), result })
+  return result
 }

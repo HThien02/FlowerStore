@@ -45,6 +45,7 @@
   "cart": {
     "title": "Shopping Cart",
     "empty": "Your cart is empty",
+    "orderSummary": "Order Summary",
     "continueShopping": "Continue Shopping",
     "subtotal": "Subtotal",
     "delivery": "Delivery",

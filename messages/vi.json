@@ -45,6 +45,7 @@
   "cart": {
     "title": "Giỏ Hàng",
     "empty": "Giỏ hàng của bạn trống",
+    "orderSummary": "Tóm tắt đơn hàng",
     "continueShopping": "Tiếp Tục Mua Hàng",
     "subtotal": "Tổng Cộng",
     "delivery": "Giao Hàng",
