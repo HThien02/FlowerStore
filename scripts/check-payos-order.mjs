@@ -31,7 +31,9 @@ const payos = new PayOS({
 
 let query = admin
   .from('orders')
-  .select('id, total, payment_status, payos_order_code, payos_payment_link_id, created_at')
+  .select(
+    'id, total, payment_status, payment_method, fulfillment_type, payos_order_code, payos_payment_link_id, created_at'
+  )
 
 if (byCode) {
   query = query.eq('payos_order_code', Number(byCode))
@@ -50,12 +52,22 @@ console.log('Order:', {
   id: order.id,
   total_vnd: order.total,
   payment_status: order.payment_status,
+  payment_method: order.payment_method,
+  fulfillment_type: order.fulfillment_type,
   payos_order_code: order.payos_order_code,
   payos_payment_link_id: order.payos_payment_link_id,
 })
 
 if (!order.payos_order_code) {
-  console.log('No payos_order_code on this order.')
+  console.log(
+    '\n⚠ Chưa có link PayOS trên đơn này — webhook sẽ luôn báo "Order not found".\n' +
+      '  Nguyên nhân thường gặp:\n' +
+      '  - Đặt đơn khi PayOS env chưa cấu hình trên server\n' +
+      '  - Tạo link PayOS lỗi sau khi đơn đã lưu (đơn mồ côi)\n' +
+      '  - Giao tại nhà (home) — không dùng PayOS trên web\n' +
+      '  → Tạo lại link: node --env-file=.env.local scripts/create-payos-link.mjs ' +
+      order.id
+  )
   process.exit(0)
 }
 

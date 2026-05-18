@@ -6,6 +6,7 @@ import {
   verifyPayosWebhookSignature,
   type PayosWebhookPayload,
 } from '@/lib/payos-webhook'
+import { findOrderForPayosEvent } from '@/lib/orders/payos-lookup'
 import { getSupabaseServerClient } from '@/lib/supabase'
 
 /** PayOS gọi POST khi có giao dịch; phải trả 2xx để xác nhận đã nhận. */
@@ -54,30 +55,18 @@ export async function POST(request: NextRequest) {
   try {
     const admin = getSupabaseServerClient()
 
-    let order: { id: string; payment_status: string | null; total: number } | null = null
-
-    if (Number.isFinite(orderCode)) {
-      const { data, error } = await admin
-        .from('orders')
-        .select('id, payment_status, total')
-        .eq('payos_order_code', orderCode)
-        .maybeSingle()
-      if (error) throw error
-      order = data
-    }
-
-    if (!order && paymentLinkId) {
-      const { data, error } = await admin
-        .from('orders')
-        .select('id, payment_status, total')
-        .eq('payos_payment_link_id', paymentLinkId)
-        .maybeSingle()
-      if (error) throw error
-      order = data
-    }
+    const order = await findOrderForPayosEvent(admin, {
+      orderCode: Number.isFinite(orderCode) ? orderCode : body.data?.orderCode,
+      paymentLinkId,
+      description: body.data?.description,
+    })
 
     if (!order) {
-      console.warn('[payos webhook] order not found', orderCode, paymentLinkId)
+      console.warn('[payos webhook] order not found', {
+        orderCode,
+        paymentLinkId,
+        description: body.data?.description,
+      })
       return NextResponse.json({ ok: true, message: 'Order not found' })
     }
 

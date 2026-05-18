@@ -11,11 +11,23 @@ export async function GET(request: NextRequest, { params }: Params) {
   const sp = request.nextUrl.searchParams
   const locale = sp.get('locale') === 'vi' ? 'vi' : 'en'
   const orderCodeParam = sp.get('orderCode')
+  const descriptionParam = sp.get('description')
 
-  if (orderId && isPayOSConfigured()) {
+  if (isPayOSConfigured()) {
     try {
       const admin = getSupabaseServerClient()
-      await syncPayosOrderPayment(admin, orderId)
+      let syncOrderId = orderId
+      if (!syncOrderId) {
+        const { resolveOrderIdForPayosReturn } = await import('@/lib/orders/payos-return')
+        syncOrderId =
+          (await resolveOrderIdForPayosReturn(admin, {
+            orderCode: orderCodeParam,
+            description: descriptionParam,
+          })) ?? undefined
+      }
+      if (syncOrderId) {
+        await syncPayosOrderPayment(admin, syncOrderId)
+      }
     } catch (e) {
       console.error('[payos/return] sync', orderId, e)
     }

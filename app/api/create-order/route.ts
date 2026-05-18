@@ -65,15 +65,23 @@ export async function POST(request: NextRequest) {
 
     if (usePayos) {
       const admin = getSupabaseServerClient()
-      const payos = await createPayosCheckoutForOrder(
-        admin,
-        result.orderId,
-        locale === 'vi' ? 'vi' : 'en'
-      )
-      checkoutUrl = payos.checkoutUrl
-      amount = payos.amount
-      payosOrderCode = payos.orderCode
-      payosDescription = payos.description
+      try {
+        const payos = await createPayosCheckoutForOrder(
+          admin,
+          result.orderId,
+          locale === 'vi' ? 'vi' : 'en'
+        )
+        checkoutUrl = payos.checkoutUrl
+        amount = payos.amount
+        payosOrderCode = payos.orderCode
+        payosDescription = payos.description
+      } catch (payosErr) {
+        console.error('[create-order] PayOS link failed, removing orphan order', result.orderId, payosErr)
+        await admin.from('orders').delete().eq('id', result.orderId)
+        const msg =
+          payosErr instanceof Error ? payosErr.message : 'Could not create PayOS payment link'
+        return NextResponse.json({ error: msg }, { status: 502 })
+      }
     }
 
     return NextResponse.json({

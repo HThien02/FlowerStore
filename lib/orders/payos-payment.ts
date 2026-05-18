@@ -46,6 +46,11 @@ export async function createPayosCheckoutForOrder(
   }
 
   const amount = roundPayosAmount(Number(order.total))
+  if (!Number.isFinite(amount) || amount < 1000) {
+    throw new Error(
+      `Order total invalid for PayOS (${order.total} VND). Cart may be empty or total not saved.`
+    )
+  }
   const payos = getPayOS()
 
   const previousCode =
@@ -64,13 +69,37 @@ export async function createPayosCheckoutForOrder(
   const returnUrl = `${base}/api/payos/return/${encodeURIComponent(orderId)}?locale=${loc}`
   const cancelUrl = `${base}/${loc}/checkout?cancelled=1`
 
-  const link = await payos.paymentRequests.create({
-    orderCode,
-    amount,
-    description,
-    returnUrl,
-    cancelUrl,
-  })
+  // Lưu mã PayOS trước khi gọi API — webhook có thể tới ngay sau khi khách thanh toán.
+  const { error: preUpErr } = await admin
+    .from('orders')
+    .update({
+      payos_order_code: orderCode,
+      payment_method: 'payos',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', orderId)
+
+  if (preUpErr) throw preUpErr
+
+  let link
+  try {
+    link = await payos.paymentRequests.create({
+      orderCode,
+      amount,
+      description,
+      returnUrl,
+      cancelUrl,
+    })
+  } catch (e) {
+    await admin
+      .from('orders')
+      .update({
+        payos_order_code: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orderId)
+    throw e
+  }
 
   console.info('[payos] link created', {
     orderId,
@@ -86,9 +115,7 @@ export async function createPayosCheckoutForOrder(
   const { error: upErr } = await admin
     .from('orders')
     .update({
-      payos_order_code: orderCode,
       payos_payment_link_id: link.paymentLinkId,
-      payment_method: 'payos',
       updated_at: new Date().toISOString(),
     })
     .eq('id', orderId)
@@ -186,16 +213,17 @@ export async function markOrderPaidByPayos(
 
   if (!order || order.payment_status === 'completed') return
 
-  const { error } = await admin
-    .from('orders')
-    .update({
-      payment_status: 'completed',
-      payment_method: 'payos',
-      status: 'processing',
-      payos_payment_link_id: opts?.paymentLinkId ?? undefined,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', orderId)
+  const patch: Record<string, unknown> = {
+    payment_status: 'completed',
+    payment_method: 'payos',
+    status: 'processing',
+    updated_at: new Date().toISOString(),
+  }
+  if (opts?.paymentLinkId) {
+    patch.payos_payment_link_id = opts.paymentLinkId
+  }
+
+  const { error } = await admin.from('orders').update(patch).eq('id', orderId)
 
   if (error) throw error
 

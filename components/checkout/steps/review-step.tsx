@@ -90,13 +90,21 @@ export default function ReviewStep({ locale }: Props) {
       }
 
       const data = await res.json()
-      clearCart()
 
-      if (data.checkoutUrl) {
+      if (paymentInfo.method === 'payos' && fulfillmentType !== 'home') {
+        if (!data.checkoutUrl) {
+          throw new Error(
+            locale === 'en'
+              ? 'PayOS payment link was not created. Check server PayOS env or try again.'
+              : 'Không tạo được link PayOS. Kiểm tra cấu hình PayOS trên server hoặc thử lại.'
+          )
+        }
+        clearCart()
         window.location.href = data.checkoutUrl as string
         return
       }
 
+      clearCart()
       const qs = data.orderId ? `?orderId=${data.orderId}` : '?type=pickup'
       window.location.href = `/${locale}/order-success${qs}`
     } catch (e) {
