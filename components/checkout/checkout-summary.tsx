@@ -5,6 +5,7 @@ import { useCart } from '@/lib/cart-context'
 import { useCheckout } from '@/lib/checkout-context'
 import PriceDisplay from '@/components/price-display'
 import { isOutsideBusinessHours, orderTotalWithFees } from '@/lib/pricing/business-hours'
+import { isShippingOutOfRange } from '@/lib/shipping/tiers'
 
 type Props = {
   locale: string
@@ -13,7 +14,7 @@ type Props = {
 export default function CheckoutSummary({ locale }: Props) {
   const t = useTranslations()
   const { items, total } = useCart()
-  const { selectedDelivery, deliveryCost, fulfillmentType, deliveryInfo } = useCheckout()
+  const { selectedDelivery, deliveryCost, fulfillmentType, deliveryInfo, shippingQuote } = useCheckout()
 
   const subtotal = total
   const scheduledDate = deliveryInfo.scheduledAt ? new Date(deliveryInfo.scheduledAt) : null
@@ -28,6 +29,7 @@ export default function CheckoutSummary({ locale }: Props) {
 
   const showDeliveryLine = fulfillmentType === 'pickup' && selectedDelivery
   const homeFlow = fulfillmentType === 'home'
+  const outOfRange = homeFlow && isShippingOutOfRange(shippingQuote)
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 sticky top-20 h-fit">
@@ -55,7 +57,27 @@ export default function CheckoutSummary({ locale }: Props) {
             <PriceDisplay amountVnd={subtotal} />
           </span>
         </div>
-        {homeFlow && (
+        {homeFlow && deliveryCost > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">{t('cart.delivery')}</span>
+            <span className="font-medium">
+              <PriceDisplay amountVnd={deliveryCost} />
+            </span>
+          </div>
+        )}
+        {homeFlow && shippingQuote?.supported && (
+          <p className="text-xs text-gray-500">
+            {locale === 'vi' ? 'Khoảng cách' : 'Distance'}: {shippingQuote.distanceKm} km
+          </p>
+        )}
+        {outOfRange && (
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2">
+            {locale === 'vi'
+              ? `Quá ${shippingQuote.distanceKm} km — không thanh toán online. Gửi đơn, NV liên hệ báo phí ship.`
+              : `Over ${shippingQuote.distanceKm} km — no online payment. Submit order; staff will quote delivery.`}
+          </p>
+        )}
+        {homeFlow && !outOfRange && !deliveryCost && !shippingQuote?.supported && (
           <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2">
             {t('checkout.summaryHomeNote')}
           </p>
@@ -80,7 +102,7 @@ export default function CheckoutSummary({ locale }: Props) {
       <div className="flex justify-between items-center">
         <span className="text-lg font-bold">{t('cart.total')}</span>
         <span className="text-2xl font-bold text-rose-500">
-          {homeFlow ? (
+          {homeFlow && (outOfRange || (deliveryCost === 0 && !shippingQuote?.supported)) ? (
             <span className="text-base font-normal text-gray-600">
               {locale === 'en' ? 'TBD after contact' : 'Liên hệ xác nhận'}
             </span>

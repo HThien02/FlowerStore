@@ -206,6 +206,9 @@ export default function AdminGuard({
                   <Link href={`/${locale}/admin/staff`} className="hover:text-rose-500">
                     Team
                   </Link>
+                  <Link href={`/${locale}/admin/settings`} className="hover:text-rose-500">
+                    Shop
+                  </Link>
                 </>
               )}
             </nav>

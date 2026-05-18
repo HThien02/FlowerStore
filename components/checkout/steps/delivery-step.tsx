@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Store, Home } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import VietnamAddressFields from '@/components/checkout/vietnam-address-fields'
+import { isShippingOutOfRange, type ShippingQuoteResult } from '@/lib/shipping/tiers'
 
 type Props = {
   locale: string
@@ -24,8 +26,18 @@ export default function DeliveryStep({ locale }: Props) {
     setCurrentStep,
     setSelectedDelivery,
     setDeliveryCost,
+    setShippingQuote,
+    shippingQuote,
+    shippingQuoteLoading,
   } = useCheckout()
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const handleQuote = useCallback(
+    (quote: ShippingQuoteResult | null, loading: boolean) => {
+      setShippingQuote(quote, loading)
+    },
+    [setShippingQuote]
+  )
 
   const selectFulfillment = (value: FulfillmentType) => {
     setFulfillmentType(value)
@@ -37,7 +49,14 @@ export default function DeliveryStep({ locale }: Props) {
         city: '',
         state: '',
         postalCode: '',
+        provinceCode: '',
+        provinceName: '',
+        districtCode: '',
+        districtName: '',
+        wardCode: '',
+        wardName: '',
       })
+      setShippingQuote(null, false)
     }
   }
 
@@ -54,8 +73,22 @@ export default function DeliveryStep({ locale }: Props) {
     if (!deliveryInfo.phone.trim()) newErrors.phone = locale === 'en' ? 'Required' : 'Bắt buộc'
 
     if (fulfillmentType === 'home') {
+      if (!deliveryInfo.provinceCode) newErrors.province = locale === 'en' ? 'Required' : 'Bắt buộc'
+      if (!deliveryInfo.districtCode) newErrors.district = locale === 'en' ? 'Required' : 'Bắt buộc'
+      if (!deliveryInfo.wardCode) newErrors.ward = locale === 'en' ? 'Required' : 'Bắt buộc'
       if (!deliveryInfo.address.trim()) newErrors.address = locale === 'en' ? 'Required' : 'Bắt buộc'
-      if (!deliveryInfo.city.trim()) newErrors.city = locale === 'en' ? 'Required' : 'Bắt buộc'
+      if (shippingQuoteLoading) {
+        newErrors.shipping = locale === 'en' ? 'Calculating delivery fee…' : 'Đang tính phí giao hàng…'
+      } else if (
+        shippingQuote &&
+        !shippingQuote.supported &&
+        !isShippingOutOfRange(shippingQuote)
+      ) {
+        newErrors.shipping =
+          locale === 'en'
+            ? 'Could not verify delivery for this address'
+            : 'Không xác minh được địa chỉ giao hàng'
+      }
     }
 
     if (!deliveryInfo.scheduledAt?.trim()) {
@@ -204,64 +237,20 @@ export default function DeliveryStep({ locale }: Props) {
       {isHome && (
         <div className="border-t pt-6 space-y-4 animate-in fade-in">
           <h3 className="font-semibold text-gray-900">{t('checkout.addressSection')}</h3>
+          <p className="text-xs text-muted-foreground">
+            {locale === 'vi'
+              ? 'Phí ship: dưới 1 km miễn phí; 1–3 km 15k; 3–5 km 25k; 5–10 km 40k; 10–15 km 55k; 15–20 km 70k; trên 20 km không giao.'
+              : 'Shipping: under 1 km free; 1–3 km 15k; 3–5 km 25k; 5–10 km 40k; 10–15 km 55k; 15–20 km 70k; over 20 km not available.'}
+          </p>
 
-          <div>
-            <Label htmlFor="address">{t('checkout.address')}</Label>
-            <Input
-              id="address"
-              value={deliveryInfo.address}
-              onChange={(e) => setDeliveryInfo({ address: e.target.value })}
-              placeholder={t('checkout.address')}
-              className={errors.address ? 'border-red-500' : ''}
-            />
-            {errors.address && <p className="text-sm text-red-500 mt-1">{errors.address}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="city">{t('checkout.city')}</Label>
-              <Input
-                id="city"
-                value={deliveryInfo.city}
-                onChange={(e) => setDeliveryInfo({ city: e.target.value })}
-                placeholder={t('checkout.city')}
-                className={errors.city ? 'border-red-500' : ''}
-              />
-              {errors.city && <p className="text-sm text-red-500 mt-1">{errors.city}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="state">{t('checkout.state')}</Label>
-              <Input
-                id="state"
-                value={deliveryInfo.state}
-                onChange={(e) => setDeliveryInfo({ state: e.target.value })}
-                placeholder={t('checkout.state')}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="postalCode">{t('checkout.postalCode')}</Label>
-              <Input
-                id="postalCode"
-                value={deliveryInfo.postalCode}
-                onChange={(e) => setDeliveryInfo({ postalCode: e.target.value })}
-                placeholder={t('checkout.postalCode')}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="country">{t('checkout.country')}</Label>
-              <Input
-                id="country"
-                value={deliveryInfo.country}
-                onChange={(e) => setDeliveryInfo({ country: e.target.value })}
-                placeholder={t('checkout.country')}
-              />
-            </div>
-          </div>
+          <VietnamAddressFields
+            locale={locale}
+            deliveryInfo={deliveryInfo}
+            onChange={setDeliveryInfo}
+            onQuote={handleQuote}
+            errors={errors}
+          />
+          {errors.shipping && <p className="text-sm text-red-500">{errors.shipping}</p>}
 
           <div>
             <Label htmlFor="notes">{t('checkout.notes')}</Label>
@@ -318,3 +307,6 @@ export default function DeliveryStep({ locale }: Props) {
     </div>
   )
 }
+
+
+

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { placeOrder } from '@/lib/orders/place-order'
 import type { HomeDeliveryForm } from '@/lib/email/templates/home-delivery-request'
+import { formatVietnamAddress } from '@/lib/vietnam-address/types'
+import { calculateShippingQuote } from '@/lib/shipping/quote'
+import { isShippingOutOfRange } from '@/lib/shipping/tiers'
 
 type Body = HomeDeliveryForm & {
   locale?: string
@@ -21,9 +24,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing scheduled delivery time' }, { status: 400 })
     }
 
-    const address = [deliveryInfo.address, deliveryInfo.city, deliveryInfo.state, deliveryInfo.postalCode]
-      .filter(Boolean)
-      .join(', ')
+    const address =
+      deliveryInfo.provinceCode && deliveryInfo.wardCode
+        ? formatVietnamAddress({
+            addressDetail: deliveryInfo.address,
+            provinceCode: deliveryInfo.provinceCode,
+            provinceName: deliveryInfo.provinceName ?? '',
+            districtCode: deliveryInfo.districtCode ?? '',
+            districtName: deliveryInfo.districtName ?? '',
+            wardCode: deliveryInfo.wardCode,
+            wardName: deliveryInfo.wardName ?? '',
+          })
+        : [deliveryInfo.address, deliveryInfo.city, deliveryInfo.state, deliveryInfo.postalCode]
+            .filter(Boolean)
+            .join(', ')
+
+    let deliveryCost = 0
+    let deliveryNotes = deliveryInfo.notes?.trim() ?? ''
+
+    if (deliveryInfo.provinceCode && deliveryInfo.districtCode && deliveryInfo.wardCode) {
+      const quote = await calculateShippingQuote({
+        addressDetail: deliveryInfo.address,
+        provinceCode: deliveryInfo.provinceCode,
+        provinceName: deliveryInfo.provinceName ?? '',
+        districtCode: deliveryInfo.districtCode,
+        districtName: deliveryInfo.districtName ?? '',
+        wardCode: deliveryInfo.wardCode,
+        wardName: deliveryInfo.wardName ?? '',
+      })
+      if (!quote.supported) {
+        if (isShippingOutOfRange(quote)) {
+          const tag = `[Giao xa >20km: ${quote.distanceKm}km — chờ NV báo phí ship]`
+          deliveryNotes = deliveryNotes ? `${deliveryNotes}\n${tag}` : tag
+        } else {
+          return NextResponse.json({ error: quote.message }, { status: 400 })
+        }
+      } else {
+        deliveryCost = quote.deliveryFee
+      }
+    }
 
     const customerName = `${deliveryInfo.firstName} ${deliveryInfo.lastName}`.trim()
 
@@ -38,10 +77,10 @@ export async function POST(request: NextRequest) {
         quantity: i.quantity,
       })),
       subtotal,
-      deliveryCost: 0,
+      deliveryCost,
       deliveryAddress: address || deliveryInfo.address,
       deliveryPhone: deliveryInfo.phone,
-      deliveryNotes: deliveryInfo.notes,
+      deliveryNotes: deliveryNotes || undefined,
       paymentMethod: 'pending_staff',
       fulfillmentType: 'home',
       scheduledAt,

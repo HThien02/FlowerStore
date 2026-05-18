@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import type { ShippingQuoteResult } from '@/lib/shipping/tiers'
 
 export type CheckoutStep = 1 | 2 | 3 | 4
 
@@ -15,6 +16,12 @@ export type DeliveryInfo = {
   postalCode: string
   country: string
   notes?: string
+  provinceCode?: string
+  provinceName?: string
+  districtCode?: string
+  districtName?: string
+  wardCode?: string
+  wardName?: string
   /** ISO local datetime for pickup / delivery (from datetime-local input) */
   scheduledAt?: string
 }
@@ -41,13 +48,16 @@ type CheckoutContextType = {
   selectedDelivery?: DeliveryOption
   paymentInfo: PaymentInfo
   deliveryCost: number
-  
+  shippingQuote: ShippingQuoteResult | null
+  shippingQuoteLoading: boolean
+
   setCurrentStep: (step: CheckoutStep) => void
   setFulfillmentType: (value: FulfillmentType | null) => void
   setDeliveryInfo: (info: Partial<DeliveryInfo>) => void
   setSelectedDelivery: (delivery: DeliveryOption) => void
   setPaymentInfo: (info: Partial<PaymentInfo>) => void
   setDeliveryCost: (cost: number) => void
+  setShippingQuote: (quote: ShippingQuoteResult | null, loading?: boolean) => void
   reset: () => void
 }
 
@@ -73,6 +83,18 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption | undefined>()
   const [paymentInfo, setPaymentInfoState] = useState<PaymentInfo>({ method: 'payos' })
   const [deliveryCost, setDeliveryCost] = useState(0)
+  const [shippingQuote, setShippingQuoteState] = useState<ShippingQuoteResult | null>(null)
+  const [shippingQuoteLoading, setShippingQuoteLoading] = useState(false)
+
+  const setShippingQuote = useCallback((quote: ShippingQuoteResult | null, loading = false) => {
+    setShippingQuoteState(quote)
+    setShippingQuoteLoading(loading)
+    if (quote?.supported) {
+      setDeliveryCost(quote.deliveryFee)
+    } else if (!loading) {
+      setDeliveryCost(0)
+    }
+  }, [])
 
   const setDeliveryInfo = (info: Partial<DeliveryInfo>) => {
     setDeliveryInfoState((prev) => ({ ...prev, ...info }))
@@ -89,6 +111,8 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     setSelectedDelivery(undefined)
     setPaymentInfoState({ method: 'payos' })
     setDeliveryCost(0)
+    setShippingQuoteState(null)
+    setShippingQuoteLoading(false)
   }
 
   return (
@@ -100,12 +124,15 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         selectedDelivery,
         paymentInfo,
         deliveryCost,
+        shippingQuote,
+        shippingQuoteLoading,
         setCurrentStep,
         setFulfillmentType,
         setDeliveryInfo,
         setSelectedDelivery,
         setPaymentInfo,
         setDeliveryCost,
+        setShippingQuote,
         reset,
       }}
     >

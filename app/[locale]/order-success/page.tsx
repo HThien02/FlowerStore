@@ -61,8 +61,8 @@ function OrderSuccess({
         <p className="text-gray-600 text-lg max-w-md mx-auto">
           {isHomeRequest
             ? locale === 'en'
-              ? 'Check your inbox for a confirmation email. Our staff will contact you within 1 hour to confirm address and pricing.'
-              : 'Kiểm tra email xác nhận. Nhân viên sẽ liên hệ trong 1 giờ để xác nhận địa chỉ và giá.'
+              ? 'We sent a confirmation email with your order details, delivery fee, and total.'
+              : 'Chúng tôi đã gửi email xác nhận kèm chi tiết đơn, phí giao hàng và tổng thanh toán.'
             : payosReturn
               ? locale === 'en'
                 ? 'Thank you! We are confirming your payOS payment.'
@@ -87,8 +87,8 @@ function OrderSuccess({
                   <span className="font-bold">1.</span>
                   <span>
                     {locale === 'en'
-                      ? 'Confirmation email sent (if mail is configured)'
-                      : 'Email xác nhận đã được gửi (nếu đã cấu hình mail)'}
+                      ? 'Check your inbox for the confirmation email'
+                      : 'Kiểm tra hộp thư email xác nhận đơn hàng'}
                   </span>
                 </li>
                 <li className="flex gap-2">
@@ -114,32 +114,24 @@ function OrderSuccess({
                   <span className="font-bold">1.</span>
                   <span>
                     {locale === 'en'
-                      ? 'You will receive a confirmation email with your order details'
-                      : 'Bạn sẽ nhận được email xác nhận với chi tiết đơn hàng'}
+                      ? 'Check your inbox — the email includes items, fees, and total'
+                      : 'Kiểm tra email — có chi tiết sản phẩm, phí ship và tổng tiền'}
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <span className="font-bold">2.</span>
                   <span>
                     {locale === 'en'
-                      ? 'Our team will prepare your flowers with care'
-                      : 'Đội của chúng tôi sẽ chuẩn bị hoa của bạn một cách cẩn thận'}
+                      ? 'Our team prepares your bouquet before pickup time'
+                      : 'Shop chuẩn bị hoa trước giờ nhận bạn đã chọn'}
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <span className="font-bold">3.</span>
                   <span>
                     {locale === 'en'
-                      ? 'You will receive a tracking number via SMS'
-                      : 'Bạn sẽ nhận được số theo dõi qua SMS'}
-                  </span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="font-bold">4.</span>
-                  <span>
-                    {locale === 'en'
-                      ? 'Enjoy your beautiful flowers!'
-                      : 'Tận hưởng những bông hoa đẹp của bạn!'}
+                      ? 'Visit the store at your scheduled time'
+                      : 'Đến cửa hàng đúng giờ hẹn'}
                   </span>
                 </li>
               </>

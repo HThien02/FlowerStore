@@ -13,8 +13,16 @@ export type OrderEmailContext = {
   customerName: string
   customerEmail: string
   items: OrderEmailItem[]
+  subtotal: number
+  deliveryCost: number
+  afterHoursFee: number
   total: number
   fulfillmentType: 'pickup' | 'home'
+  deliveryAddress?: string | null
+  deliveryPhone?: string | null
+  deliveryNotes?: string | null
+  paymentMethod?: string | null
+  paymentStatus?: string | null
   scheduledAt?: string | null
   prepScheduledAt?: string | null
   staffName?: string | null
@@ -33,6 +41,68 @@ function fmtDate(iso: string | null | undefined, locale: 'en' | 'vi') {
   })
 }
 
+function orderTotalsTable(ctx: OrderEmailContext, locale: 'en' | 'vi') {
+  const rows: string[] = []
+
+  rows.push(`
+    <tr>
+      <td style="padding:8px 0;color:#52525b;">${locale === 'vi' ? 'Tạm tính sản phẩm' : 'Subtotal'}</td>
+      <td style="padding:8px 0;text-align:right;">${fmtMoney(ctx.subtotal, locale)}</td>
+    </tr>
+  `)
+
+  if (ctx.fulfillmentType === 'home') {
+    const farNote = ctx.deliveryNotes?.includes('Giao xa >20km')
+    if (ctx.deliveryCost > 0) {
+      rows.push(`
+        <tr>
+          <td style="padding:8px 0;color:#52525b;">${locale === 'vi' ? 'Phí giao hàng' : 'Delivery fee'}</td>
+          <td style="padding:8px 0;text-align:right;">${fmtMoney(ctx.deliveryCost, locale)}</td>
+        </tr>
+      `)
+    } else if (farNote) {
+      rows.push(`
+        <tr>
+          <td style="padding:8px 0;color:#52525b;">${locale === 'vi' ? 'Phí giao hàng' : 'Delivery fee'}</td>
+          <td style="padding:8px 0;text-align:right;color:#b45309;">${locale === 'vi' ? 'Nhân viên báo sau' : 'Quoted by staff'}</td>
+        </tr>
+      `)
+    } else {
+      rows.push(`
+        <tr>
+          <td style="padding:8px 0;color:#52525b;">${locale === 'vi' ? 'Phí giao hàng' : 'Delivery fee'}</td>
+          <td style="padding:8px 0;text-align:right;">${locale === 'vi' ? 'Miễn phí' : 'Free'}</td>
+        </tr>
+      `)
+    }
+  } else if (ctx.deliveryCost > 0) {
+    rows.push(`
+      <tr>
+        <td style="padding:8px 0;color:#52525b;">${locale === 'vi' ? 'Phí giao hàng' : 'Delivery fee'}</td>
+        <td style="padding:8px 0;text-align:right;">${fmtMoney(ctx.deliveryCost, locale)}</td>
+      </tr>
+    `)
+  }
+
+  if (ctx.afterHoursFee > 0) {
+    rows.push(`
+      <tr>
+        <td style="padding:8px 0;color:#b45309;">${locale === 'vi' ? 'Phụ thu ngoài giờ (10%)' : 'After-hours surcharge (10%)'}</td>
+        <td style="padding:8px 0;text-align:right;color:#b45309;">+${fmtMoney(ctx.afterHoursFee, locale)}</td>
+      </tr>
+    `)
+  }
+
+  rows.push(`
+    <tr>
+      <td style="padding:12px 0 0;font-size:17px;font-weight:700;border-top:2px solid #e4e4e7;">${locale === 'vi' ? 'Tổng thanh toán' : 'Total'}</td>
+      <td style="padding:12px 0 0;font-size:17px;font-weight:700;text-align:right;border-top:2px solid #e4e4e7;">${fmtMoney(ctx.total, locale)}</td>
+    </tr>
+  `)
+
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">${rows.join('')}</table>`
+}
+
 function itemsTable(items: OrderEmailItem[], locale: 'en' | 'vi') {
   const rows = items
     .map(
@@ -46,7 +116,7 @@ function itemsTable(items: OrderEmailItem[], locale: 'en' | 'vi') {
   return `<table width="100%" cellpadding="0" cellspacing="0">${rows}</table>`
 }
 
-function orderDetailsBody(ctx: OrderEmailContext, locale: 'en' | 'vi') {
+function orderDetailsBody(ctx: OrderEmailContext, locale: 'en' | 'vi', opts?: { showStaff?: boolean }) {
   const fulfillment =
     ctx.fulfillmentType === 'home'
       ? locale === 'vi'
@@ -56,21 +126,61 @@ function orderDetailsBody(ctx: OrderEmailContext, locale: 'en' | 'vi') {
         ? 'Nhận tại cửa hàng'
         : 'Store pickup'
 
+  const paymentLabel =
+    ctx.paymentStatus === 'completed'
+      ? locale === 'vi'
+        ? 'Đã thanh toán'
+        : 'Paid'
+      : ctx.paymentMethod === 'payos'
+        ? locale === 'vi'
+          ? 'Chờ thanh toán PayOS'
+          : 'Awaiting PayOS payment'
+        : ctx.paymentMethod === 'pending_staff'
+          ? locale === 'vi'
+            ? 'Thanh toán khi xác nhận'
+            : 'Pay after confirmation'
+          : null
+
   return `
     <p style="margin:0 0 12px;">${locale === 'vi' ? 'Mã đơn' : 'Order'}: <strong>#${escapeHtml(ctx.orderId.slice(0, 8))}</strong></p>
     <p style="margin:0 0 12px;">${locale === 'vi' ? 'Hình thức' : 'Type'}: <strong>${fulfillment}</strong></p>
     <p style="margin:0 0 12px;">${locale === 'vi' ? 'Thời gian nhận/giao' : 'Scheduled time'}: <strong>${fmtDate(ctx.scheduledAt, locale)}</strong></p>
+    ${
+      paymentLabel
+        ? `<p style="margin:0 0 12px;">${locale === 'vi' ? 'Thanh toán' : 'Payment'}: <strong>${paymentLabel}</strong></p>`
+        : ''
+    }
+    ${
+      ctx.fulfillmentType === 'home' && ctx.deliveryAddress
+        ? `<p style="margin:0 0 12px;">${locale === 'vi' ? 'Giao đến' : 'Deliver to'}: <strong>${escapeHtml(ctx.deliveryAddress)}</strong>${ctx.deliveryPhone ? `<br/><span style="font-size:14px;color:#52525b;">${locale === 'vi' ? 'Điện thoại' : 'Phone'}: ${escapeHtml(ctx.deliveryPhone)}</span>` : ''}</p>`
+        : ''
+    }
     ${
       ctx.prepScheduledAt
         ? `<p style="margin:0 0 12px;font-size:14px;color:#71717a;">${
             locale === 'vi'
               ? `Shop chuẩn bị từ: ${fmtDate(ctx.prepScheduledAt, locale)}`
               : `We start preparing at: ${fmtDate(ctx.prepScheduledAt, locale)}`
-          }${ctx.staffName ? ` · ${escapeHtml(ctx.staffName)}` : ''}</p>`
+          }${opts?.showStaff && ctx.staffName ? ` · ${escapeHtml(ctx.staffName)}` : ''}</p>`
         : ''
     }
-    <div style="margin:16px 0;">${itemsTable(ctx.items, locale)}</div>
-    <p style="margin:12px 0 0;font-size:17px;"><strong>${locale === 'vi' ? 'Tổng' : 'Total'}: ${fmtMoney(ctx.total, locale)}</strong></p>
+    <div style="margin:16px 0;">
+      <p style="margin:0 0 8px;font-weight:600;">${locale === 'vi' ? 'Sản phẩm' : 'Items'}</p>
+      ${itemsTable(ctx.items, locale)}
+    </div>
+    <div style="margin:16px 0;padding:16px;background:#fafafa;border-radius:8px;">
+      <p style="margin:0 0 8px;font-weight:600;">${locale === 'vi' ? 'Chi tiết thanh toán' : 'Payment summary'}</p>
+      ${orderTotalsTable(ctx, locale)}
+    </div>
+    ${
+      ctx.fulfillmentType === 'home' && ctx.paymentMethod === 'pending_staff'
+        ? `<p style="margin:16px 0 0;font-size:14px;color:#52525b;">${
+            locale === 'vi'
+              ? 'Nhân viên có thể liên hệ để xác nhận giá hoa nếu cần.'
+              : 'Our team may contact you to confirm flower pricing if needed.'
+          }</p>`
+        : ''
+    }
   `
 }
 
@@ -93,7 +203,7 @@ export function orderPlacedAdminEmail(ctx: OrderEmailContext) {
   const body = `
     <p>A new order needs attention.</p>
     <p>Customer: <strong>${escapeHtml(ctx.customerName)}</strong> (${escapeHtml(ctx.customerEmail)})</p>
-    ${orderDetailsBody(ctx, 'en')}
+    ${orderDetailsBody(ctx, 'en', { showStaff: true })}
   `
   return {
     subject: `🌸 New order #${ctx.orderId.slice(0, 8)}`,
@@ -190,10 +300,11 @@ export function prepReminderStaffEmail(
     <p>Hi team,</p>
     <p>Start preparing order <strong>#${escapeHtml(ctx.orderId.slice(0, 8))}</strong> at <strong>${fmtDate(ctx.prepScheduledAt, 'en')}</strong>.</p>
     <p>Customer pickup/delivery: <strong>${fmtDate(ctx.scheduledAt, 'en')}</strong></p>
-    ${orderDetailsBody(ctx, 'en')}
+    ${orderDetailsBody(ctx, 'en', { showStaff: true })}
   `
   return {
     subject: `⏰ Prep in 1h — order #${ctx.orderId.slice(0, 8)}`,
     html: emailShell({ title, bodyHtml: body, preheader: title }),
   }
 }
+
