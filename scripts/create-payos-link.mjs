@@ -54,7 +54,7 @@ if (order.payment_status === 'completed') {
 const amount = Math.max(Math.round(Number(order.total)), 1000)
 const orderCode = generatePayosOrderCode()
 const description = payosDescription(orderCode)
-const returnUrl = `${base}/api/payos/return/${encodeURIComponent(orderId)}?locale=${locale}`
+const returnUrl = `${base}/${locale}/order-success?orderId=${encodeURIComponent(orderId)}&payos=1`
 const cancelUrl = `${base}/${locale}/checkout?cancelled=1`
 
 console.log('Creating PayOS link…', { orderId, amount, orderCode, description })
@@ -75,10 +75,26 @@ if (preErr) {
 
 let link
 try {
+  const { data: rows } = await admin
+    .from('order_items')
+    .select('product_name, quantity, product_price')
+    .eq('order_id', orderId)
+
+  let items = (rows ?? []).map((r) => ({
+    name: String(r.product_name || 'Sản phẩm').slice(0, 120),
+    quantity: Math.max(1, Number(r.quantity) || 1),
+    price: Math.round(Number(r.product_price) || 0),
+  }))
+  const sum = items.reduce((s, i) => s + i.price * i.quantity, 0)
+  if (!items.length || sum !== amount) {
+    items = [{ name: 'Đơn hàng TFlowers', quantity: 1, price: amount }]
+  }
+
   link = await payos.paymentRequests.create({
     orderCode,
     amount,
     description,
+    items,
     returnUrl,
     cancelUrl,
   })

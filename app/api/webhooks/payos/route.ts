@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayOS, isPayOSConfigured } from '@/lib/payos'
 import { markOrderPaidByPayos } from '@/lib/orders/payos-payment'
-import {
-  isPayosWebhookPaymentSuccess,
-  verifyPayosWebhookSignature,
-  type PayosWebhookPayload,
-} from '@/lib/payos-webhook'
+import type { PayosWebhookData, PayosWebhookPayload } from '@/lib/payos-webhook'
 import { findOrderForPayosEvent } from '@/lib/orders/payos-lookup'
 import { getSupabaseServerClient } from '@/lib/supabase'
 
@@ -22,55 +18,53 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'PayOS not configured' }, { status: 503 })
   }
 
-  const orderCode = Number(body.data?.orderCode)
-  const paymentLinkId =
-    typeof body.data?.paymentLinkId === 'string' ? body.data.paymentLinkId : undefined
+  if (!body.data || !body.signature) {
+    console.error('[payos webhook] missing data or signature')
+    return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
+  }
 
-  console.info('[payos webhook] received', { orderCode, paymentLinkId, topCode: body.code })
+  const payos = getPayOS()
+  let data: PayosWebhookData
+  try {
+    data = await payos.webhooks.verify(body)
+  } catch (e) {
+    console.error('[payos webhook] verify failed', e)
+    return NextResponse.json({ error: 'Invalid webhook' }, { status: 400 })
+  }
 
-  if (!isPayosWebhookPaymentSuccess(body)) {
-    console.warn('[payos webhook] ignored non-success', body.code, body.data?.code, body.desc)
+  const orderCode = Number(data.orderCode)
+  const paymentLinkId = typeof data.paymentLinkId === 'string' ? data.paymentLinkId : undefined
+
+  console.info('[payos webhook] verified', { orderCode, paymentLinkId, code: data.code })
+
+  if (data.code && data.code !== '00') {
+    console.warn('[payos webhook] ignored non-success data.code', data.code, data.desc)
     return NextResponse.json({ ok: true, ignored: true })
   }
 
-  if (!body.data || !body.signature) {
-    console.error('[payos webhook] missing data or signature')
-    return NextResponse.json({ ok: true, error: 'missing_fields' })
-  }
-
-  const checksumKey = process.env.PAYOS_CHECKSUM_KEY!
-  let verified = verifyPayosWebhookSignature(body.data, body.signature, checksumKey)
-
-  if (!verified) {
-    try {
-      const payos = getPayOS()
-      await payos.webhooks.verify(body)
-      verified = true
-    } catch (e) {
-      console.error('[payos webhook] signature invalid', e)
-      return NextResponse.json({ ok: true, verified: false })
-    }
+  if (!Number.isFinite(orderCode)) {
+    return NextResponse.json({ ok: true, ignored: true })
   }
 
   try {
     const admin = getSupabaseServerClient()
 
     const order = await findOrderForPayosEvent(admin, {
-      orderCode: Number.isFinite(orderCode) ? orderCode : body.data?.orderCode,
+      orderCode,
       paymentLinkId,
-      description: body.data?.description,
+      description: data.description,
     })
 
     if (!order) {
       console.warn('[payos webhook] order not found', {
         orderCode,
         paymentLinkId,
-        description: body.data?.description,
+        description: data.description,
       })
       return NextResponse.json({ ok: true, message: 'Order not found' })
     }
 
-    const paidAmount = Number(body.data.amount ?? 0)
+    const paidAmount = Number(data.amount ?? 0)
     const orderTotal = Number(order.total ?? 0)
     if (paidAmount > 0 && orderTotal > 0 && paidAmount < orderTotal) {
       console.warn('[payos webhook] underpaid', order.id, paidAmount, orderTotal)
@@ -78,8 +72,8 @@ export async function POST(request: NextRequest) {
 
     await markOrderPaidByPayos(admin, order.id, { paymentLinkId })
 
-    console.info('[payos webhook] marked paid', order.id, orderCode, body.data.description)
-    return NextResponse.json({ ok: true, orderId: order.id })
+    console.info('[payos webhook] marked paid', order.id, orderCode, data.description)
+    return new NextResponse('OK', { status: 200 })
   } catch (e: unknown) {
     console.error('[payos webhook] handler', e, JSON.stringify(body))
     return NextResponse.json({ ok: true, error: 'handler_failed' })

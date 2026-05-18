@@ -1,12 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   generatePayosOrderCode,
-  getAppBaseUrl,
   getPayOS,
   isPayOSConfigured,
+  isPublicHttpsAppUrl,
+  payosCancelUrl,
   payosDescription,
+  payosReturnUrl,
 } from '@/lib/payos'
 import { roundPayosAmount } from '@/lib/payos'
+import { buildPayosLineItems } from '@/lib/orders/payos-items'
 import { notifyOrderEvent } from '@/lib/orders/notify-order'
 
 const PAID_STATUSES = new Set(['PAID', 'PROCESSING', 'COMPLETED', 'SUCCESS'])
@@ -35,7 +38,9 @@ export async function createPayosCheckoutForOrder(
 ): Promise<{ checkoutUrl: string; orderCode: number; amount: number; description: string }> {
   const { data: order, error } = await admin
     .from('orders')
-    .select('id, total, payment_status, payos_order_code')
+    .select(
+      'id, total, payment_status, payos_order_code, customer_email, customer_name, delivery_phone'
+    )
     .eq('id', orderId)
     .single()
 
@@ -61,13 +66,22 @@ export async function createPayosCheckoutForOrder(
     await cancelPayosLinkIfPending(payos, previousCode)
   }
 
+  if (!isPublicHttpsAppUrl()) {
+    console.warn(
+      '[payos] NEXT_PUBLIC_APP_URL should be public HTTPS — PayOS return/webhook cannot reach localhost'
+    )
+  }
+
+  const { data: orderItems } = await admin
+    .from('order_items')
+    .select('product_name, quantity, product_price')
+    .eq('order_id', orderId)
+
   const orderCode = generatePayosOrderCode()
   const description = payosDescription(orderCode)
-
-  const base = getAppBaseUrl()
-  const loc = locale === 'vi' ? 'vi' : 'en'
-  const returnUrl = `${base}/api/payos/return/${encodeURIComponent(orderId)}?locale=${loc}`
-  const cancelUrl = `${base}/${loc}/checkout?cancelled=1`
+  const items = buildPayosLineItems(orderItems ?? [], amount)
+  const returnUrl = payosReturnUrl(orderId, locale)
+  const cancelUrl = payosCancelUrl(locale)
 
   // Lưu mã PayOS trước khi gọi API — webhook có thể tới ngay sau khi khách thanh toán.
   const { error: preUpErr } = await admin
@@ -87,8 +101,12 @@ export async function createPayosCheckoutForOrder(
       orderCode,
       amount,
       description,
+      items,
       returnUrl,
       cancelUrl,
+      buyerName: order.customer_name ?? undefined,
+      buyerEmail: order.customer_email ?? undefined,
+      buyerPhone: order.delivery_phone ?? undefined,
     })
   } catch (e) {
     await admin

@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server'
-import { generatePayosOrderCode, isPayOSConfigured, payosDescription } from '@/lib/payos'
+import {
+  generatePayosOrderCode,
+  getAppBaseUrl,
+  isPayOSConfigured,
+  isPublicHttpsAppUrl,
+  payosDescription,
+} from '@/lib/payos'
 
 /** Kiểm tra production đã chạy bản PayOS mới (description = VQRIO + orderCode). */
 export async function GET() {
@@ -15,8 +21,12 @@ export async function GET() {
     sampleDescription: description,
     descriptionUsesVqrioPrefix: vqrioFormat,
     descriptionLength: description.length,
+    appBaseUrl: getAppBaseUrl(),
+    publicHttps: isPublicHttpsAppUrl(),
     hint: vqrioFormat
-      ? 'OK — orderCode 6 số, mô tả VQRIO{code} (≤11 ký tự). Deploy + đơn mới + quét QR.'
+      ? isPublicHttpsAppUrl()
+        ? 'OK — đặt đơn pickup + PayOS, quét QR trên trang PayOS (không chuyển tay).'
+        : 'Set NEXT_PUBLIC_APP_URL=https://your-domain.com (PayOS không redirect về localhost).'
       : 'BUG — description không đúng định dạng VQRIO',
   })
 }

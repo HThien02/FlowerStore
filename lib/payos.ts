@@ -32,6 +32,24 @@ export function getAppBaseUrl(): string {
   return 'http://localhost:3000'
 }
 
+/** returnUrl PayOS — trang success (PayOS chỉ redirect browser khi thanh toán PAID). */
+export function payosReturnUrl(orderId: string, locale: string): string {
+  const base = getAppBaseUrl()
+  const loc = locale === 'vi' ? 'vi' : 'en'
+  return `${base}/${loc}/order-success?orderId=${encodeURIComponent(orderId)}&payos=1`
+}
+
+export function payosCancelUrl(locale: string): string {
+  const base = getAppBaseUrl()
+  const loc = locale === 'vi' ? 'vi' : 'en'
+  return `${base}/${loc}/checkout?cancelled=1`
+}
+
+export function isPublicHttpsAppUrl(): boolean {
+  const url = getAppBaseUrl()
+  return url.startsWith('https://') && !url.includes('localhost')
+}
+
 /**
  * Mã đơn PayOS: 6 chữ số (100000–999999).
  * Cùng prefix VQRIO → mô tả ≤11 ký tự (VQRIO123456), tránh NH cắt nội dung CK.
